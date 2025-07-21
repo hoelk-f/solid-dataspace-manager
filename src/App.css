@@ -1,38 +1,168 @@
-.App {
-  text-align: center;
+body {
+  font-family: "Segoe UI", sans-serif;
+  background: #f4f4f4;
+  margin: 0;
+  padding: 0;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.container {
+  max-width: 1000px;
+  margin: 2rem auto;
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.main-title {
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+  color: #2e7d32;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.topbar {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 0.7rem;
+  margin-bottom: 1rem;
+}
+
+.breadcrumb-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nav-folder-icon {
+  font-size: 1.3rem;
+}
+
+.nav-label {
+  font-weight: 600;
+}
+
+.nav-separator {
+  color: #999;
+}
+
+.breadcrumb-left button {
+  padding: 0.35rem 0.7rem;
+  background-color: #2e7d32;
   color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
 }
 
-.App-link {
-  color: #61dafb;
+.breadcrumb-left button:hover {
+  background-color: #1b5e20;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.logout-btn {
+  background-color: #c62828;
+  color: white;
+  padding: 0.4rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.logout-btn:hover {
+  background-color: #b71c1c;
+}
+
+.center-login {
+  text-align: center;
+  margin-top: 4rem;
+}
+
+.login-btn {
+  background-color: #2e7d32;
+  color: white;
+  padding: 0.6rem 1.4rem;
+  font-size: 1rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.login-btn:hover {
+  background-color: #1b5e20;
+}
+
+.file-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  font-size: 0.95rem;
+}
+
+.file-table thead {
+  background-color: #f3f3f3;
+}
+
+.file-table th {
+  text-align: left;
+  padding: 0.6rem 1rem;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 1px solid #ddd;
+}
+
+.file-table td {
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid #eee;
+  vertical-align: middle;
+}
+
+.file-table tr:hover {
+  background-color: #f9f9f9;
+}
+
+.icon {
+  font-size: 1.1rem;
+  margin-right: 0.4rem;
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  margin-left: 0.4rem;
+  transition: opacity 0.2s;
+}
+
+.action-btn.edit {
+  color: #1976d2;
+}
+
+.action-btn.delete {
+  color: #d32f2f;
+}
+
+.action-btn:hover {
+  opacity: 0.8;
+}
+
+.bottom-right {
+  text-align: right;
+  margin-top: 1rem;
+}
+
+.back-btn {
+  background-color: #757575;
+  color: white;
+  padding: 0.5rem 1.1rem;
+  font-size: 0.85rem;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.back-btn:hover {
+  background-color: #616161;
 }
