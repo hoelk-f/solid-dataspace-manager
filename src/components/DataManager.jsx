@@ -31,7 +31,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import "./DataManager.css";
 import CreateFolderModal from "./CreateFolderModal";
-import ShareModal from "./ShareModal";
+import ShareFileModal from "./ShareFileModal";
 
 const noCacheFetch = (input, init = {}) =>
   solidFetch(input, {
@@ -342,10 +342,12 @@ export default function DataManager({ webId }) {
 
   const loadShareAgents = (acl) => {
     const agentAccess = getAgentResourceAccessAll(acl);
-    const agents = Object.entries(agentAccess).map(([webId, access]) => ({
-      webId,
-      access,
-    }));
+    const agents = Object.entries(agentAccess)
+      .filter(([agentWebId]) => agentWebId !== webId)
+      .map(([agentWebId, access]) => ({
+        webId: agentWebId,
+        access,
+      }));
     setShareAgents(agents);
   };
 
@@ -420,7 +422,7 @@ export default function DataManager({ webId }) {
         onClose={() => setFolderModalOpen(false)}
         onCreate={handleCreateFolder}
       />
-      <ShareModal
+      <ShareFileModal
         show={shareModalOpen}
         onClose={() => {
           setShareModalOpen(false);

@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import "./Modal.css";
 
-const ShareModal = ({ show, onClose, onShare, onRemove, existing = [] }) => {
+const ShareFileModal = ({ show, onClose, onShare, onRemove, existing = [] }) => {
   const [webId, setWebId] = useState("");
   const [access, setAccess] = useState({
     read: true,
@@ -31,7 +31,7 @@ const ShareModal = ({ show, onClose, onShare, onRemove, existing = [] }) => {
     <div className="modal-overlay">
       <div className="modal-box">
         <div className="modal-header">
-          <span className="modal-title">Share Item</span>
+          <span className="modal-title">Share File</span>
           <button className="modal-close" onClick={onClose} aria-label="Close">
             &times;
           </button>
@@ -134,4 +134,4 @@ const ShareModal = ({ show, onClose, onShare, onRemove, existing = [] }) => {
   );
 };
 
-export default ShareModal;
+export default ShareFileModal;
