@@ -16,7 +16,7 @@ function Info() {
       <div className="toolbar toolbar--title">
         <div className="crumb">
           <FontAwesomeIcon icon={faCircleInfo} className="crumb-icon" />
-          <span>Solid Dataspace</span>
+          <span>Information</span>
         </div>
         <div />
       </div>
