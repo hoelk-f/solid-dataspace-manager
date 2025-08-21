@@ -13,6 +13,7 @@ import {
   faFile
 } from "@fortawesome/free-solid-svg-icons";
 import { logout } from "@inrupt/solid-client-authn-browser";
+import "./Sidebar.css";
 
 function Sidebar() {
   const { pathname } = useLocation();
