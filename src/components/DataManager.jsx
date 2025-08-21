@@ -6,6 +6,14 @@ import {
   deleteContainer,
   createContainerAt,
   overwriteFile,
+  getFileWithAcl,
+  getSolidDatasetWithAcl,
+  getResourceAcl,
+  hasResourceAcl,
+  hasAccessibleAcl,
+  createAclFromFallbackAcl,
+  setAgentResourceAccess,
+  saveAclFor,
 } from "@inrupt/solid-client";
 import { fetch as solidFetch } from "@inrupt/solid-client-authn-browser";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -52,6 +60,7 @@ function FilesView({
   deleteItem,
   downloadFile,
   goBack,
+  shareItem,
 }) {
   const [hideTtl, setHideTtl] = useState(true);
   const visibleItems = hideTtl ? items.filter((url) => !url.toLowerCase().endsWith(".ttl")) : items;
@@ -132,7 +141,7 @@ function FilesView({
                           </button>
                         )}
                         <button
-                          onClick={() => {}}
+                          onClick={() => shareItem(url)}
                           className="icon-btn share"
                           title="Share"
                           aria-label="Share"
@@ -306,6 +315,40 @@ export default function DataManager({ webId }) {
     }
   };
 
+  const shareItem = async (url) => {
+    const webId = prompt("WebID to share with?");
+    if (!webId) return;
+    const level = prompt("Permission? (read, write, control)");
+    if (!level) return;
+    const permission = level.toLowerCase();
+    const access = {
+      read: permission === "read" || permission === "write" || permission === "control",
+      append: permission === "write" || permission === "control",
+      write: permission === "write" || permission === "control",
+      control: permission === "control",
+    };
+    try {
+      const resource = url.endsWith("/")
+        ? await getSolidDatasetWithAcl(url, { fetch: noCacheFetch })
+        : await getFileWithAcl(url, { fetch: noCacheFetch });
+      let resourceAcl;
+      if (!hasResourceAcl(resource)) {
+        if (!hasAccessibleAcl(resource)) {
+          alert("No access to ACL.");
+          return;
+        }
+        resourceAcl = createAclFromFallbackAcl(resource);
+      } else {
+        resourceAcl = getResourceAcl(resource);
+      }
+      const updatedAcl = setAgentResourceAccess(resourceAcl, webId, access);
+      await saveAclFor(resource, updatedAcl, { fetch: noCacheFetch });
+      alert("Permissions updated.");
+    } catch {
+      alert("Sharing failed.");
+    }
+  };
+
   const goBack = () => {
     if (!currentUrl) return;
     const url = new URL(currentUrl);
@@ -333,6 +376,7 @@ export default function DataManager({ webId }) {
         deleteItem={deleteItem}
         downloadFile={downloadFile}
         goBack={goBack}
+        shareItem={shareItem}
       />
     </>
   );
