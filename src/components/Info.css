@@ -1,0 +1,38 @@
+.info-page {
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.info-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--primary);
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.info-intro {
+  margin-bottom: 1.5rem;
+}
+
+.info-section {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.2rem 1.4rem;
+  margin-bottom: 1.4rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.info-section h2 {
+  margin: 0 0 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.25rem;
+  color: var(--text);
+}
+
+.info-section p {
+  margin: 0;
+}
