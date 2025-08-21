@@ -114,7 +114,7 @@ function LoginScreen({ onLogin }) {
               <div className="guide-step">
                 <span className="step-num">1</span>
                 <p>
-                  Visit <a href="https://tmdt-solid-community-server.de" target="_blank" rel="noreferrer">tmdt-solid-community-server.de</a>
+                  Visit <a href="https://tmdt-solid-community-server.de" target="_blank" rel="noreferrer">tmdt-solid-community-server.de</a> or any other Solid Pod Provider.
                 </p>
               </div>
               <div className="guide-step">
@@ -160,26 +160,6 @@ function LoginScreen({ onLogin }) {
                 </button>
               );
             })}
-          </div>
-          <div className="provider-guide">
-            <p>No Solid Pod yet? You can create one in a few minutes.</p>
-            <p>Example with the <strong>TMDT Solid Server</strong>:</p>
-            <ol>
-              <li>
-                Visit
-                {" "}
-                <a
-                  href="https://tmdt-solid-community-server.de"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  tmdt-solid-community-server.de
-                </a>
-              </li>
-              <li>Click <strong>Register</strong> and create your account.</li>
-              <li>Log in and choose a name to create your Pod.</li>
-              <li>Return here and pick the provider to sign in with your new Pod.</li>
-            </ol>
           </div>
         </div>
         <div className="login-section">
