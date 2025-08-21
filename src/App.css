@@ -225,15 +225,6 @@ body {
   margin: 0;
   font-size: 0.9rem;
 }
-.guide-step a {
-  margin-top: 10px;
-  background: #f7f9fc;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 12px 16px;
-  font-size: .95rem;
-  color: var(--text);
-}
 .provider-guide p {
   margin: 0 0 .5rem;
 }
