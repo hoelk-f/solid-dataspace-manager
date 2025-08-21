@@ -13,11 +13,19 @@ import {
 function Info() {
   return (
     <div className="info-page">
-      <h1 className="info-title">Solid Dataspace</h1>
+      <div className="toolbar toolbar--title">
+        <div className="crumb">
+          <FontAwesomeIcon icon={faCircleInfo} className="crumb-icon" />
+          <span>Solid Dataspace</span>
+        </div>
+        <div />
+      </div>
       <p className="info-intro">
         Solid Dataspace is a prototype dataspace built on Solid, the decentralised data platform
-        initiated by web inventor Tim Berners-Lee. Solid stores information in personal online data
-        stores called Pods, giving people control over where their data lives and who can use it.
+        initiated by web inventor Tim Berners-Lee. Solid lets individuals store information in personal
+        online data stores called Pods that they control. Using open standards for authentication and
+        data interchange, Pods allow people to decide where their data lives, who can access it, and to
+        move between applications without losing control.
       </p>
 
       <div className="info-section">
@@ -77,10 +85,11 @@ function Info() {
           <FontAwesomeIcon icon={faCircleInfo} /> How it all connects
         </h2>
         <p>
-          Data flows into Solid Pods via tools like Node-RED. PLASMA adds semantic annotations before
-          datasets are published in the Semantic Data Catalog. People manage their Pods through the Data
-          Manager and Profile Manager, while applications such as Urban Heat Monitoring reuse the
-          catalogued resources. Together these components form the Solid Dataspace.
+          Data flows into Solid Pods via tools like Node-RED or manual uploads through the Data Manager.
+          PLASMA adds semantic annotations before datasets are published in the Semantic Data Catalog.
+          People manage their Pods through the Data Manager and Profile Manager, while applications such
+          as Urban Heat Monitoring reuse the catalogued resources. Together these components form the
+          Solid Dataspace.
         </p>
       </div>
     </div>

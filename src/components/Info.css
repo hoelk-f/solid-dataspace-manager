@@ -3,14 +3,6 @@
   color: var(--text);
 }
 
-.info-title {
-  font-size: 2rem;
-  font-weight: 800;
-  color: var(--primary);
-  margin-top: 0;
-  margin-bottom: 1rem;
-}
-
 .info-intro {
   margin-bottom: 1.5rem;
 }
