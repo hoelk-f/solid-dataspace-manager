@@ -29,6 +29,8 @@ import {
   faShareNodes
 } from "@fortawesome/free-solid-svg-icons";
 import "./DataManager.css";
+import CreateFolderModal from "./CreateFolderModal";
+import ShareModal from "./ShareModal";
 
 const noCacheFetch = (input, init = {}) =>
   solidFetch(input, {
@@ -236,8 +238,13 @@ export default function DataManager({ webId }) {
     loadItems(nextUrl);
   };
 
-  const createFolder = async () => {
-    const name = prompt("Folder name?");
+  const [folderModalOpen, setFolderModalOpen] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [shareTargetUrl, setShareTargetUrl] = useState("");
+
+  const openCreateFolderModal = () => setFolderModalOpen(true);
+
+  const handleCreateFolder = async (name) => {
     if (!name) return;
     const folderUrl = currentUrl + name + "/";
     try {
@@ -315,18 +322,14 @@ export default function DataManager({ webId }) {
     }
   };
 
-  const shareItem = async (url) => {
-    const webId = prompt("WebID to share with?");
-    if (!webId) return;
-    const level = prompt("Permission? (read, write, control)");
-    if (!level) return;
-    const permission = level.toLowerCase();
-    const access = {
-      read: permission === "read" || permission === "write" || permission === "control",
-      append: permission === "write" || permission === "control",
-      write: permission === "write" || permission === "control",
-      control: permission === "control",
-    };
+  const openShareModal = (url) => {
+    setShareTargetUrl(url);
+    setShareModalOpen(true);
+  };
+
+  const handleShareItem = async (webId, access) => {
+    const url = shareTargetUrl;
+    if (!url) return;
     try {
       const resource = url.endsWith("/")
         ? await getSolidDatasetWithAcl(url, { fetch: noCacheFetch })
@@ -369,14 +372,27 @@ export default function DataManager({ webId }) {
         currentUrl={currentUrl}
         items={items}
         loading={loading}
-        createFolder={createFolder}
+        createFolder={openCreateFolderModal}
         uploadFile={uploadFile}
         navigateTo={navigateTo}
         renameItem={renameItem}
         deleteItem={deleteItem}
         downloadFile={downloadFile}
         goBack={goBack}
-        shareItem={shareItem}
+        shareItem={openShareModal}
+      />
+      <CreateFolderModal
+        show={folderModalOpen}
+        onClose={() => setFolderModalOpen(false)}
+        onCreate={handleCreateFolder}
+      />
+      <ShareModal
+        show={shareModalOpen}
+        onClose={() => {
+          setShareModalOpen(false);
+          setShareTargetUrl("");
+        }}
+        onShare={handleShareItem}
       />
     </>
   );
