@@ -25,8 +25,8 @@
 .sb-brand {
   display: flex;
   align-items: center;
-  height: 56px;
   gap: 10px;
+  margin-bottom: 16px;
 }
 
 .sb-logo {
@@ -37,7 +37,7 @@
 
 .sb-logo img {
   display: block;
-  width: 120px;
+  width: 100px;
   height: auto;
 }
 
