@@ -7,15 +7,20 @@ import { faArrowLeft, faUpRightFromSquare } from "@fortawesome/free-solid-svg-ic
 export default function ExternalHost() {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const entry = externalLinks.find(e => e.slug === slug);
+  const activeLink = externalLinks.find((link) => link.slug === slug);
   const [loaded, setLoaded] = useState(false);
 
-  const isParentHttps = typeof window !== "undefined" && window.location.protocol === "https:";
-  const isHttpTarget = useMemo(() => {
-    try { return new URL(entry?.url || "").protocol === "http:"; } catch { return false; }
-  }, [entry]);
+  const isParentHttps =
+    typeof window !== "undefined" && window.location.protocol === "https:";
+  const targetIsHttp = useMemo(() => {
+    try {
+      return new URL(activeLink?.url || "").protocol === "http:";
+    } catch {
+      return false;
+    }
+  }, [activeLink]);
 
-  if (!entry) {
+  if (!activeLink) {
     return (
       <div className="container">
         <div className="toolbar">
@@ -31,14 +36,19 @@ export default function ExternalHost() {
     );
   }
 
-  const cannotEmbed = isParentHttps && isHttpTarget;
+  const cannotEmbed = isParentHttps && targetIsHttp;
 
   return (
     <div className="container">
       <div className="toolbar">
         <div className="crumb"><span></span></div>
         <div className="primary-actions">
-          <a className="pill-btn" href={entry.url} target="_blank" rel="noreferrer">
+          <a
+            className="pill-btn"
+            href={activeLink.url}
+            target="_blank"
+            rel="noreferrer"
+          >
             <FontAwesomeIcon icon={faUpRightFromSquare} /><span>Open</span>
           </a>
         </div>
@@ -53,8 +63,8 @@ export default function ExternalHost() {
           {!loaded && <p>Loading…</p>}
           <div style={{ width: "100%", height: "calc(1000px)" }}>
             <iframe
-              src={entry.url}
-              title={entry.title}
+              src={activeLink.url}
+              title={activeLink.title}
               onLoad={() => setLoaded(true)}
               style={{ width: "100%", height: "100%", border: 0 }}
               referrerPolicy="no-referrer-when-downgrade"
