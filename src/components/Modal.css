@@ -103,3 +103,34 @@
   background: #e0e0e0;
   color: #333;
 }
+
+.acl-list {
+  list-style: none;
+  margin: 0.5rem 0 0 0;
+  padding: 0;
+}
+
+.acl-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+
+.acl-webid {
+  flex: 1;
+  word-break: break-all;
+}
+
+.acl-perms {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.acl-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--danger, #c00);
+}
