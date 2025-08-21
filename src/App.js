@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import DataManager from "./components/DataManager";
 import ExternalHost from "./components/ExternalHost";
+import Info from "./components/Info";
 
 const App = () => {
   const [webId, setWebId] = useState("");
@@ -53,6 +54,7 @@ const App = () => {
             <Routes>
               <Route path="/" element={<DataManager webId={webId} />} />
               <Route path="/profile" element={<ProfilePage webId={webId} />} />
+              <Route path="/info" element={<Info />} />
               <Route path="/web/:slug" element={<ExternalHost />} />
             </Routes>
           </div>

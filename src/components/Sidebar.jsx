@@ -52,7 +52,7 @@ function Sidebar() {
         </Link>
 
         <div className="sb-section">General</div>
-        <Link to="/" className="sb-link">
+        <Link to="/info" className={"sb-link" + (isActive("/info") ? " active" : "")}>
           <FontAwesomeIcon icon={faInfo} />
           <span>Information</span>
         </Link>
