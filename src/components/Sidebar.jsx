@@ -40,6 +40,7 @@ function Sidebar() {
       </div>
 
       <nav className="sb-nav">
+        <div className="sb-section">General</div>
         <Link to="/" className={"sb-link" + (isActive("/") ? " active" : "")}>
           <FontAwesomeIcon icon={faTableColumns} />
           <span>Data Manager</span>
@@ -51,13 +52,11 @@ function Sidebar() {
           <FontAwesomeIcon icon={faUser} />
           <span>Profile Manager</span>
         </Link>
-
-        <div className="sb-section">General</div>
         <Link to="/info" className={"sb-link" + (isActive("/info") ? " active" : "")}>
           <FontAwesomeIcon icon={faInfo} />
           <span>Information</span>
         </Link>
-        
+
         <div className="sb-section">Consume and Provide</div>
         <Link to="/web/catalog" className="sb-link">
           <FontAwesomeIcon icon={faBookOpen} />
