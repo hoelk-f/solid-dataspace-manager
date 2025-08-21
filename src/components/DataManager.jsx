@@ -20,6 +20,7 @@ import {
   faArrowLeft,
   faShareNodes
 } from "@fortawesome/free-solid-svg-icons";
+import "./DataManager.css";
 
 const noCacheFetch = (input, init = {}) =>
   solidFetch(input, {

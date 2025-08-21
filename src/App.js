@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { getDefaultSession, login, handleIncomingRedirect } from "@inrupt/solid-client-authn-browser";
 import "./App.css";
+import "./LoginScreen.css";
 import Profile from "./components/Profile";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUser, faRightFromBracket, faLock } from "@fortawesome/free-solid-svg-icons";
