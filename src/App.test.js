@@ -1,8 +1,16 @@
-import { render, screen } from '@testing-library/react';
-import App from './App';
+import { render, screen } from "@testing-library/react";
+import React from "react";
 
-test('renders learn react link', () => {
+jest.mock("react-router-dom", () => ({
+  BrowserRouter: ({ children }) => <div>{children}</div>,
+  Routes: ({ children }) => <div>{children}</div>,
+  Route: () => null,
+}), { virtual: true });
+
+import App from "./App";
+
+test("renders login screen", () => {
   render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+  const title = screen.getByText(/Solid Dataspace Connector/i);
+  expect(title).toBeInTheDocument();
 });
