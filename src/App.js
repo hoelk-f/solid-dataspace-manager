@@ -105,6 +105,34 @@ function LoginScreen({ onLogin }) {
       </div>
       <div className="login-card">
         <div className="login-section">
+          <div className="provider-guide">
+            <div className="provider-guide-head">
+              <span className="guide-title">No Solid Pod yet?</span>
+              <span className="guide-sub">Example using the <strong>TMDT Solid Server</strong></span>
+            </div>
+            <div className="guide-steps">
+              <div className="guide-step">
+                <span className="step-num">1</span>
+                <p>
+                  Visit <a href="https://tmdt-solid-community-server.de" target="_blank" rel="noreferrer">tmdt-solid-community-server.de</a>
+                </p>
+              </div>
+              <div className="guide-step">
+                <span className="step-num">2</span>
+                <p>Click <strong>Register</strong> to create your account.</p>
+              </div>
+              <div className="guide-step">
+                <span className="step-num">3</span>
+                <p>Log in and choose a name to create your Pod.</p>
+              </div>
+              <div className="guide-step">
+                <span className="step-num">4</span>
+                <p>Come back here, pick the provider and sign in with your new Pod.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="login-section">
           <div className="section-head">
             <span className="section-title">Suggested providers</span>
             <span className="section-hint">Pick a card or use “Custom issuer” below</span>
