@@ -1,7 +1,9 @@
 import React, { useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import "./Modal.css";
 
-const ShareModal = ({ show, onClose, onShare }) => {
+const ShareModal = ({ show, onClose, onShare, onRemove, existing = [] }) => {
   const [webId, setWebId] = useState("");
   const [access, setAccess] = useState({
     read: true,
@@ -15,13 +17,12 @@ const ShareModal = ({ show, onClose, onShare }) => {
     setAccess((prev) => ({ ...prev, [name]: checked }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const id = webId.trim();
     if (!id) return;
-    onShare(id, access);
+    await onShare(id, access);
     setWebId("");
     setAccess({ read: true, append: false, write: false, control: false });
-    onClose();
   };
 
   if (!show) return null;
@@ -36,6 +37,31 @@ const ShareModal = ({ show, onClose, onShare }) => {
           </button>
         </div>
         <div className="modal-body">
+          {existing.length > 0 && (
+            <div className="form-group">
+              <span className="modal-label">Current Access</span>
+              <ul className="acl-list">
+                {existing.map(({ webId: id, access }) => (
+                  <li key={id} className="acl-item">
+                    <span className="acl-webid">{id}</span>
+                    <span className="acl-perms">
+                      {Object.entries(access)
+                        .filter(([, v]) => v)
+                        .map(([k]) => k)
+                        .join(", ")}
+                    </span>
+                    <button
+                      className="acl-remove"
+                      onClick={() => onRemove(id)}
+                      aria-label="Remove access"
+                    >
+                      <FontAwesomeIcon icon={faTrash} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="form-group">
             <label htmlFor="share-webid" className="modal-label">
               WebID

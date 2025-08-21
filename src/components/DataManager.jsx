@@ -13,6 +13,7 @@ import {
   hasAccessibleAcl,
   createAclFromFallbackAcl,
   setAgentResourceAccess,
+  getAgentResourceAccessAll,
   saveAclFor,
 } from "@inrupt/solid-client";
 import { fetch as solidFetch } from "@inrupt/solid-client-authn-browser";
@@ -241,6 +242,7 @@ export default function DataManager({ webId }) {
   const [folderModalOpen, setFolderModalOpen] = useState(false);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareTargetUrl, setShareTargetUrl] = useState("");
+  const [shareAgents, setShareAgents] = useState([]);
 
   const openCreateFolderModal = () => setFolderModalOpen(true);
 
@@ -322,33 +324,65 @@ export default function DataManager({ webId }) {
     }
   };
 
-  const openShareModal = (url) => {
-    setShareTargetUrl(url);
-    setShareModalOpen(true);
+  const getResourceAndAcl = async (url) => {
+    const resource = url.endsWith("/")
+      ? await getSolidDatasetWithAcl(url, { fetch: noCacheFetch })
+      : await getFileWithAcl(url, { fetch: noCacheFetch });
+    let resourceAcl;
+    if (!hasResourceAcl(resource)) {
+      if (!hasAccessibleAcl(resource)) {
+        throw new Error("No access to ACL.");
+      }
+      resourceAcl = createAclFromFallbackAcl(resource);
+    } else {
+      resourceAcl = getResourceAcl(resource);
+    }
+    return { resource, resourceAcl };
+  };
+
+  const loadShareAgents = (acl) => {
+    const agentAccess = getAgentResourceAccessAll(acl);
+    const agents = Object.entries(agentAccess).map(([webId, access]) => ({
+      webId,
+      access,
+    }));
+    setShareAgents(agents);
+  };
+
+  const openShareModal = async (url) => {
+    try {
+      const { resourceAcl } = await getResourceAndAcl(url);
+      loadShareAgents(resourceAcl);
+      setShareTargetUrl(url);
+      setShareModalOpen(true);
+    } catch {
+      alert("Failed to load ACL.");
+    }
   };
 
   const handleShareItem = async (webId, access) => {
     const url = shareTargetUrl;
     if (!url) return;
     try {
-      const resource = url.endsWith("/")
-        ? await getSolidDatasetWithAcl(url, { fetch: noCacheFetch })
-        : await getFileWithAcl(url, { fetch: noCacheFetch });
-      let resourceAcl;
-      if (!hasResourceAcl(resource)) {
-        if (!hasAccessibleAcl(resource)) {
-          alert("No access to ACL.");
-          return;
-        }
-        resourceAcl = createAclFromFallbackAcl(resource);
-      } else {
-        resourceAcl = getResourceAcl(resource);
-      }
+      const { resource, resourceAcl } = await getResourceAndAcl(url);
       const updatedAcl = setAgentResourceAccess(resourceAcl, webId, access);
       await saveAclFor(resource, updatedAcl, { fetch: noCacheFetch });
-      alert("Permissions updated.");
+      loadShareAgents(updatedAcl);
     } catch {
       alert("Sharing failed.");
+    }
+  };
+
+  const handleRemoveShare = async (webId) => {
+    const url = shareTargetUrl;
+    if (!url) return;
+    try {
+      const { resource, resourceAcl } = await getResourceAndAcl(url);
+      const updatedAcl = setAgentResourceAccess(resourceAcl, webId, {});
+      await saveAclFor(resource, updatedAcl, { fetch: noCacheFetch });
+      loadShareAgents(updatedAcl);
+    } catch {
+      alert("Failed to remove access.");
     }
   };
 
@@ -391,8 +425,11 @@ export default function DataManager({ webId }) {
         onClose={() => {
           setShareModalOpen(false);
           setShareTargetUrl("");
+          setShareAgents([]);
         }}
         onShare={handleShareItem}
+        onRemove={handleRemoveShare}
+        existing={shareAgents}
       />
     </>
   );
