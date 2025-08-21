@@ -10,7 +10,8 @@ import {
   faUser,
   faRightFromBracket,
   faInfo,
-  faFile
+  faFile,
+  faServer
 } from "@fortawesome/free-solid-svg-icons";
 import { logout } from "@inrupt/solid-client-authn-browser";
 import "./Sidebar.css";
@@ -76,6 +77,17 @@ function Sidebar() {
           <FontAwesomeIcon icon={faFile} />
           <span>Urban Heat Monitoring</span>
         </Link>
+
+        <div className="sb-section">Miscellaneous</div>
+        <a
+          href="https://tmdt-solid-community-server.de"
+          className="sb-link"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <FontAwesomeIcon icon={faServer} />
+          <span>Solid Pod Provider</span>
+        </a>
       </nav>
 
       <div className="sb-bottom">
