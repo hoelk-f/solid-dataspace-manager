@@ -1,60 +1,18 @@
-version: '3'
 services:
-  db:
-    image: mariadb:10.5
-    container_name: solid_dataspace_manager_db
-    environment:
-      MYSQL_ROOT_PASSWORD: 8ED4iwZwPcwKPc
-      MYSQL_DATABASE: solid_dataspace_manager
-      MYSQL_USER: solid_dataspace_manager
-      MYSQL_PASSWORD: mNXZqSq4oK53Q7
-    volumes:
-      - db_data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 5s
-
-  backend:
-    build: ./backend
-    container_name: solid_dataspace_manager_backend
-    environment:
-      - BASE_URI=${BASE_URI}
-      - CATALOG_NAME=Solid Dataspace Manager
-      - CATALOG_DESCRIPTION=Demonstrator Instance
-      - DATABASE_URL=${DATABASE_URL}
-      - RESET_DB=true
-      - RUN_POPULATE=true
-    depends_on:
-      db:
-        condition: service_healthy
-    command: bash -c "alembic upgrade head && python populate.py && uvicorn main:app --host 0.0.0.0 --port 8000"
-
   frontend:
-    build: ./frontend
+    build: .
     container_name: solid_dataspace_manager_frontend
     volumes:
-      - "./frontend:/app/frontend:delegated"
-      - "/app/frontend/node_modules"
+      - ./:/app:delegated
+      - /app/node_modules
     stdin_open: true
     environment:
       - REACT_APP_OIDC_ISSUER=https://solidcommunity.net
       - REACT_APP_REDIRECT_URL=${FRONTEND_REDIRECT}
       - REACT_APP_FOOTER_LOGOS=/assets/images/Logo_GesundesTal.png,/assets/images/Icon_GesundesTal.png
       - REACT_APP_VERSION=0.5.0
+      - PORT=5000
     tty: true
-    depends_on:
-      - backend
-
-  fuseki:
-    image: stain/jena-fuseki
-    container_name: solid_dataspace_manager_fuseki
-    environment:
-      - ADMIN_PASSWORD=admin
-    volumes:
-      - fuseki_data:/fuseki
 
   caddy:
     image: caddy:2
@@ -65,12 +23,8 @@ services:
       - caddy_config:/config
     depends_on:
       - frontend
-      - backend
-      - fuseki
 
 volumes:
-  db_data:
   node_modules:
-  fuseki_data:
   caddy_data:
   caddy_config:
