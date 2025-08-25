@@ -1,6 +1,0 @@
-solid-dataspace-manager.com, www.solid-dataspace-manager.com {
-  reverse_proxy frontend:5000
-}
-
-# Refer to the Caddy docs for more information:
-# https://caddyserver.com/docs/caddyfile
