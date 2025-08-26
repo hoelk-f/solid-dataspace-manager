@@ -14,9 +14,4 @@ export const externalLinks = [
     title: "Node-RED",
     url: "https://tmdt-solid-community-server.de/nodered",
   },
-  {
-    slug: "heat",
-    title: "Urban Heat Monitoring",
-    url: "https://smart-city-urban-heat-monitoring.com",
-  },
 ];
