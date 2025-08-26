@@ -44,6 +44,19 @@ body {
   color: var(--primary);
 }
 
+.crumb-link {
+  cursor: pointer;
+  color: var(--primary);
+}
+
+.crumb-link:hover {
+  text-decoration: underline;
+}
+
+.crumb-separator {
+  margin: 0 .25rem;
+}
+
 .primary-actions {
   display: flex;
   gap: .6rem;

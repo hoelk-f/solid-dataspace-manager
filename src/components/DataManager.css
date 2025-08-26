@@ -90,27 +90,6 @@
   color: #2e7d32;
 }
 
-.bottom-right {
-  text-align: right;
-  margin-top: 1rem;
-}
-
-.back-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: .5rem;
-  background: #757575;
-  color: white;
-  padding: .55rem 1rem;
-  font-size: .9rem;
-  border: none;
-  border-radius: 12px;
-  cursor: pointer;
-}
-
-.back-btn:hover {
-  background: #616161;
-}
 
 .file-table-container {
   height: calc(100vh - 220px);
