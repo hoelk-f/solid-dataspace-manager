@@ -141,17 +141,33 @@ export default function Profile({ webId }) {
         setRole(getStringNoLocale(me, VCARD.role) || "");
 
         const emailUris = getUrlAll(me, VCARD.hasEmail) || [];
-        const emailThings = emailUris
-          .map((uri) => ({ uri, thing: getThing(ds, uri) }))
-          .filter((x) => x.thing);
+        const collected = [];
+        emailUris.forEach((uri) => {
+          if (uri.startsWith("mailto:")) {
+            collected.push({
+              id: `${profileDocUrl}#email-${Date.now()}-${collected.length}`,
+              value: uri.replace(/^mailto:/, ""),
+              type: "Work",
+            });
+          } else {
+            const thing = getThing(ds, uri);
+            if (thing) {
+              collected.push({
+                id: uri,
+                value: (getUrl(thing, VCARD.value) || "").replace(/^mailto:/, ""),
+                type: getStringNoLocale(thing, VCARD_TYPE) || "Work",
+              });
+            }
+          }
+        });
 
-        setEmails(
-          emailThings.map(({ uri, thing }) => ({
-            id: uri,
-            value: (getUrl(thing, VCARD.value) || "").replace(/^mailto:/, ""),
-            type: getStringNoLocale(thing, VCARD_TYPE) || "Work"
-          }))
-        );
+        const directEmails = (getUrlAll(me, VCARD.email) || []).map((uri, idx) => ({
+          id: `${profileDocUrl}#email-${Date.now()}-${collected.length + idx}`,
+          value: uri.replace(/^mailto:/, ""),
+          type: "Work",
+        }));
+
+        setEmails([...collected, ...directEmails]);
 
         const ph = getUrl(me, VCARD.hasPhoto) || getUrl(me, FOAF.img) || "";
         setPhotoIri(ph);
@@ -218,9 +234,10 @@ export default function Profile({ webId }) {
 
       let ds = dataset;
       me = removeAll(me, VCARD.hasEmail);
+      me = removeAll(me, VCARD.email);
 
       for (const email of emails) {
-        const nodeUrl = email.id.startsWith("http") ? email.id : `${profileDocUrl}#${email.id.replace(/^#/, "")}`;
+        const nodeUrl = email.id.startsWith("http") ? email.id : `${profileDocUrl}#${email.id.replace(/^#|^mailto:/, "")}`;
         let emailNode = createThing({ url: nodeUrl });
         emailNode = removeAll(emailNode, VCARD.value);
         emailNode = setUrl(emailNode, VCARD.value, `mailto:${email.value}`);
