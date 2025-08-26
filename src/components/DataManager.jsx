@@ -32,6 +32,7 @@ import {
 import "./DataManager.css";
 import CreateFolderModal from "./CreateFolderModal";
 import ShareFileModal from "./ShareFileModal";
+import RenameItemModal from "./RenameItemModal";
 
 const noCacheFetch = (input, init = {}) =>
   solidFetch(input, {
@@ -250,6 +251,9 @@ export default function DataManager({ webId }) {
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareTargetUrl, setShareTargetUrl] = useState("");
   const [shareAgents, setShareAgents] = useState([]);
+  const [renameModalOpen, setRenameModalOpen] = useState(false);
+  const [renameTargetUrl, setRenameTargetUrl] = useState("");
+  const [renameCurrentName, setRenameCurrentName] = useState("");
 
   const openCreateFolderModal = () => setFolderModalOpen(true);
 
@@ -278,8 +282,14 @@ export default function DataManager({ webId }) {
     }
   };
 
-  const renameItem = async (url) => {
-    const newName = prompt("New name?");
+  const openRenameModal = (url) => {
+    const name = decodeURIComponent(url.replace(currentUrl, "").replace(/\/$/, ""));
+    setRenameTargetUrl(url);
+    setRenameCurrentName(name);
+    setRenameModalOpen(true);
+  };
+
+  const performRename = async (url, newName) => {
     if (!newName) return;
     const newUrl = currentUrl + newName + (url.endsWith("/") ? "/" : "");
     try {
@@ -295,6 +305,13 @@ export default function DataManager({ webId }) {
     } catch {
       alert("Rename failed.");
     }
+  };
+
+  const handleRenameSubmit = async (newName) => {
+    await performRename(renameTargetUrl, newName);
+    setRenameModalOpen(false);
+    setRenameTargetUrl("");
+    setRenameCurrentName("");
   };
 
   const uploadFile = async () => {
@@ -416,7 +433,7 @@ export default function DataManager({ webId }) {
         createFolder={openCreateFolderModal}
         uploadFile={uploadFile}
         navigateTo={navigateTo}
-        renameItem={renameItem}
+        renameItem={openRenameModal}
         deleteItem={deleteItem}
         downloadFile={downloadFile}
         goBack={goBack}
@@ -437,6 +454,16 @@ export default function DataManager({ webId }) {
         onShare={handleShareItem}
         onRemove={handleRemoveShare}
         existing={shareAgents}
+      />
+      <RenameItemModal
+        show={renameModalOpen}
+        onClose={() => {
+          setRenameModalOpen(false);
+          setRenameTargetUrl("");
+          setRenameCurrentName("");
+        }}
+        onRename={handleRenameSubmit}
+        currentName={renameCurrentName}
       />
     </>
   );
