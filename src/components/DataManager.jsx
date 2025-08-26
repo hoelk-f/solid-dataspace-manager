@@ -26,7 +26,6 @@ import {
   faPen,
   faTrash,
   faDownload,
-  faArrowLeft,
   faShareNodes
 } from "@fortawesome/free-solid-svg-icons";
 import "./DataManager.css";
@@ -63,8 +62,8 @@ function FilesView({
   renameItem,
   deleteItem,
   downloadFile,
-  goBack,
   shareItem,
+  crumbs,
 }) {
   const [hideTtl, setHideTtl] = useState(true);
   const visibleItems = hideTtl ? items.filter((url) => !url.toLowerCase().endsWith(".ttl")) : items;
@@ -72,8 +71,25 @@ function FilesView({
     <>
       <div className="toolbar">
         <div className="crumb">
-          <FontAwesomeIcon className="crumb-icon" />
-          <span>All files</span>
+          {crumbs.map((crumb, index) => (
+            <React.Fragment key={crumb.url}>
+              {index === 0 ? (
+                <FontAwesomeIcon icon={faFolder} className="crumb-icon" />
+              ) : (
+                <span className="crumb-separator">&gt;</span>
+              )}
+              {index === crumbs.length - 1 ? (
+                <span>{crumb.name}</span>
+              ) : (
+                <span
+                  className="crumb-link"
+                  onClick={() => navigateTo(crumb.url)}
+                >
+                  {crumb.name}
+                </span>
+              )}
+            </React.Fragment>
+          ))}
         </div>
         <div className="primary-actions">
           <label
@@ -167,12 +183,6 @@ function FilesView({
               </tbody>
             </table>
           </div>
-          <div className="bottom-right">
-            <button onClick={goBack} className="back-btn" title="Go back">
-              <FontAwesomeIcon icon={faArrowLeft} />
-              <span>Back</span>
-            </button>
-          </div>
         </>
       )}
     </>
@@ -245,6 +255,21 @@ export default function DataManager({ webId }) {
     const nextUrl = url.endsWith("/") ? url : url + "/";
     setCurrentUrl(nextUrl);
     loadItems(nextUrl);
+  };
+
+  const computeCrumbs = () => {
+    const rootUrl = rootUrlRef.current;
+    if (!rootUrl) return [];
+    const url = new URL(currentUrl);
+    const root = new URL(rootUrl);
+    const relative = url.pathname.replace(root.pathname, "");
+    const parts = relative.split("/").filter(Boolean);
+    const crumbs = [{ name: "All files", url: rootUrl }];
+    parts.forEach((part, idx) => {
+      const partUrl = rootUrl + parts.slice(0, idx + 1).join("/") + "/";
+      crumbs.push({ name: decodeURIComponent(part), url: partUrl });
+    });
+    return crumbs;
   };
 
   const [folderModalOpen, setFolderModalOpen] = useState(false);
@@ -412,17 +437,6 @@ export default function DataManager({ webId }) {
     }
   };
 
-  const goBack = () => {
-    if (!currentUrl || currentUrl === rootUrlRef.current) return;
-    const url = new URL(currentUrl);
-    const parts = url.pathname.split("/").filter(Boolean);
-    parts.pop();
-    const parentPath = "/" + parts.join("/") + "/";
-    const parentUrl = url.origin + parentPath;
-    setCurrentUrl(parentUrl);
-    loadItems(parentUrl);
-  };
-
   return (
     <>
       <TopHeader />
@@ -436,8 +450,8 @@ export default function DataManager({ webId }) {
         renameItem={openRenameModal}
         deleteItem={deleteItem}
         downloadFile={downloadFile}
-        goBack={goBack}
         shareItem={openShareModal}
+        crumbs={computeCrumbs()}
       />
       <CreateFolderModal
         show={folderModalOpen}
