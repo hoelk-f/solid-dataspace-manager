@@ -192,7 +192,7 @@ export default function DataManager({ webId }) {
     const profileIndex = segments.indexOf("profile");
     const baseSegments = profileIndex > -1 ? segments.slice(0, profileIndex) : segments;
     const basePath = baseSegments.length ? `/${baseSegments.join("/")}/` : "/";
-    const rootUrl = `${url.origin}${basePath}public/`;
+    const rootUrl = `${url.origin}${basePath}`;
     rootUrlRef.current = rootUrl;
     setCurrentUrl(rootUrl);
     loadItems(rootUrl);
