@@ -119,7 +119,7 @@ export default function Profile({ webId }) {
   const [editBasics, setEditBasics] = useState(false);
   const [editContact, setEditContact] = useState(false);
 
-  const profileDocUrl = webId ? webId.split("#")[0] : "";
+  const profileDocUrl = webId ? new URL("/profile/card", webId).href : "";
 
   useEffect(() => {
     if (!webId) return;
