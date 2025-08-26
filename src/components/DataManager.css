@@ -23,6 +23,7 @@
 .th-actions {
   text-align: right;
   padding-left: 0;
+  white-space: nowrap;
 }
 
 .file-table td {
@@ -35,23 +36,16 @@
   background: #fbfdff;
 }
 
-.cell-icon {
-  margin-right: .6rem;
-  font-size: 1rem;
-}
-
-.cell-icon.folder {
-  color: var(--primary);
-}
-
-.cell-icon.file {
-  color: #7b8794;
+.file-table th:first-child,
+.file-table td:first-child {
+  width: 100%;
 }
 
 .actions-cell {
   display: flex;
   justify-content: flex-end;
   gap: .25rem;
+  white-space: nowrap;
 }
 
 .icon-btn {
