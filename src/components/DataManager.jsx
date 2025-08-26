@@ -20,7 +20,6 @@ import { fetch as solidFetch } from "@inrupt/solid-client-authn-browser";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faFolder,
-  faFileLines,
   faPlus,
   faUpload,
   faPen,
@@ -135,10 +134,6 @@ function FilesView({
                         onClick={() => isFolder && navigateTo(url)}
                         style={{ cursor: isFolder ? "pointer" : "default" }}
                       >
-                        <FontAwesomeIcon
-                          icon={isFolder ? faFolder : faFileLines}
-                          className={isFolder ? "cell-icon folder" : "cell-icon file"}
-                        />
                         {name}
                       </td>
                       <td className="actions-cell">
