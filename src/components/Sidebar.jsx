@@ -73,10 +73,10 @@ function Sidebar() {
         </Link>
 
         <div className="sb-section">Applications</div>
-        <a href="/smart-city-urban-heat-monitoring/" className="sb-link">
+        <Link to="/web/urban-heat-monitoring" className="sb-link">
           <FontAwesomeIcon icon={faFile} />
           <span>Urban Heat Monitoring</span>
-        </a>
+        </Link>
 
         <div className="sb-section">Miscellaneous</div>
         <a
