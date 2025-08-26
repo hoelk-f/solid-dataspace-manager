@@ -20,6 +20,7 @@ import { fetch as solidFetch } from "@inrupt/solid-client-authn-browser";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faFolder,
+  faFile,
   faPlus,
   faUpload,
   faPen,
@@ -72,11 +73,7 @@ function FilesView({
         <div className="crumb">
           {crumbs.map((crumb, index) => (
             <React.Fragment key={crumb.url}>
-              {index === 0 ? (
-                <FontAwesomeIcon icon={faFolder} className="crumb-icon" />
-              ) : (
-                <span className="crumb-separator">&gt;</span>
-              )}
+              {index > 0 && <span className="crumb-separator">&gt;</span>}
               {index === crumbs.length - 1 ? (
                 <span>{crumb.name}</span>
               ) : (
@@ -134,6 +131,10 @@ function FilesView({
                         onClick={() => isFolder && navigateTo(url)}
                         style={{ cursor: isFolder ? "pointer" : "default" }}
                       >
+                        <FontAwesomeIcon
+                          icon={isFolder ? faFolder : faFile}
+                          className="file-icon"
+                        />
                         {name}
                       </td>
                       <td className="actions-cell">
