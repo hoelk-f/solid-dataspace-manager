@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   getSolidDataset,
   getContainedResourceUrlAll,
@@ -182,10 +182,17 @@ export default function DataManager({ webId }) {
   const [currentUrl, setCurrentUrl] = useState("");
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
+  const rootUrlRef = useRef("");
 
   useEffect(() => {
     if (!webId) return;
-    const rootUrl = new URL(webId).origin + "/public/";
+    const url = new URL(webId);
+    const segments = url.pathname.split("/").filter(Boolean);
+    const profileIndex = segments.indexOf("profile");
+    const baseSegments = profileIndex > -1 ? segments.slice(0, profileIndex) : segments;
+    const basePath = baseSegments.length ? `/${baseSegments.join("/")}/` : "/";
+    const rootUrl = `${url.origin}${basePath}public/`;
+    rootUrlRef.current = rootUrl;
     setCurrentUrl(rootUrl);
     loadItems(rootUrl);
   }, [webId]);
@@ -389,11 +396,9 @@ export default function DataManager({ webId }) {
   };
 
   const goBack = () => {
-    if (!currentUrl) return;
+    if (!currentUrl || currentUrl === rootUrlRef.current) return;
     const url = new URL(currentUrl);
-    let path = url.pathname;
-    if (path === "/public/" || path === "/") return;
-    const parts = path.split("/").filter((p) => p);
+    const parts = url.pathname.split("/").filter(Boolean);
     parts.pop();
     const parentPath = "/" + parts.join("/") + "/";
     const parentUrl = url.origin + parentPath;
