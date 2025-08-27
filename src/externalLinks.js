@@ -10,9 +10,9 @@ export const externalLinks = [
     url: "http://plasma.uni-wuppertal.de/modelings",
   },
   {
-    slug: "nodered",
+    slug: "node-red",
     title: "Node-RED",
-    url: "https://tmdt-solid-community-server.de/nodered",
+    url: "/node-red/",
   },
   {
     slug: "urban-heat-monitoring",
