@@ -133,7 +133,7 @@ function FilesView({
                       >
                         <FontAwesomeIcon
                           icon={isFolder ? faFolder : faFile}
-                          className="file-icon"
+                          className={`file-icon ${isFolder ? "folder" : "file"}`}
                         />
                         {name}
                       </td>

@@ -34,7 +34,14 @@
 
 .file-icon {
   margin-right: .5rem;
+}
+
+.file-icon.folder {
   color: var(--primary);
+}
+
+.file-icon.file {
+  color: #000;
 }
 
 .file-table tr:hover {
