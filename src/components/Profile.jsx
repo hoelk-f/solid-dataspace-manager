@@ -1,8 +1,20 @@
 import React, { useEffect, useState, memo } from "react";
 import {
-  getSolidDataset, getThing, getThingAll, setThing, saveSolidDatasetAt,
-  createThing, getStringNoLocale, getUrl, getUrlAll,
-  setUrl, addUrl, setStringNoLocale, removeAll, overwriteFile
+  getSolidDataset,
+  getThing,
+  getThingAll,
+  setThing,
+  saveSolidDatasetAt,
+  createThing,
+  getStringNoLocale,
+  getUrl,
+  getUrlAll,
+  setUrl,
+  addUrl,
+  setStringNoLocale,
+  removeAll,
+  overwriteFile,
+  createContainerAt,
 } from "@inrupt/solid-client";
 import { fetch } from "@inrupt/solid-client-authn-browser";
 import { VCARD, FOAF } from "@inrupt/vocab-common-rdf";
@@ -199,9 +211,32 @@ export default function Profile({ webId }) {
   }, [photoIri]);
 
   const uploadAvatar = async (file) => {
-    const origin = new URL(webId).origin;
+    const url = new URL(webId);
+    const segments = url.pathname.split("/").filter(Boolean);
+    const profileIndex = segments.indexOf("profile");
+    const baseSegments = profileIndex > -1 ? segments.slice(0, profileIndex) : segments;
+    const basePath = baseSegments.length ? `/${baseSegments.join("/")}/` : "/";
+    const podRoot = `${url.origin}${basePath}`;
+
+    const ensureContainer = async (containerUrl) => {
+      try {
+        await getSolidDataset(containerUrl, { fetch });
+      } catch (e) {
+        if (e?.statusCode === 404 || e?.response?.status === 404) {
+          await createContainerAt(containerUrl, { fetch });
+        } else {
+          throw e;
+        }
+      }
+    };
+
+    const publicUrl = `${podRoot}public/`;
+    const profileUrl = `${publicUrl}profile/`;
+    await ensureContainer(publicUrl);
+    await ensureContainer(profileUrl);
+
     const ext = file.name.split(".").pop()?.toLowerCase() || "png";
-    const targetUrl = `${origin}/public/profile/avatar-${Date.now()}.${ext}`;
+    const targetUrl = `${profileUrl}avatar-${Date.now()}.${ext}`;
     await overwriteFile(targetUrl, file, {
       contentType: file.type || guessContentType(file.name, "image/*"),
       fetch,
