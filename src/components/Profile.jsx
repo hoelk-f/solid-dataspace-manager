@@ -230,9 +230,7 @@ export default function Profile({ webId }) {
       }
     };
 
-    const publicUrl = `${podRoot}public/`;
-    const profileUrl = `${publicUrl}profile/`;
-    await ensureContainer(publicUrl);
+    const profileUrl = `${podRoot}profile/`;
     await ensureContainer(profileUrl);
 
     const ext = file.name.split(".").pop()?.toLowerCase() || "png";
