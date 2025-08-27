@@ -69,8 +69,7 @@ function Info() {
           Solid Pods, keeping live information available within the dataspace.
         </p>
         <p>
-          Use the credentials <code>solid-dataspace</code> and 
-          <code>QsLumGq^BSJr^eB2xM%4</code> to sign in to the Node-RED dashboard.
+          Use the credentials <code>solid-dataspace</code> and  <code> QsLumGq^BSJr^eB2xM%4</code> to sign in to the Node-RED dashboard.
         </p>
       </div>
 
