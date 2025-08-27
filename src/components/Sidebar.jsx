@@ -67,7 +67,7 @@ function Sidebar() {
           <FontAwesomeIcon icon={faHexagonNodes} />
           <span>PLASMA</span>
         </Link>
-        <Link to="/web/nodered" className="sb-link">
+        <Link to="/web/node-red" className="sb-link">
           <FontAwesomeIcon icon={faDatabase} />
           <span>Node-RED</span>
         </Link>
