@@ -2,7 +2,7 @@ export const externalLinks = [
   {
     slug: "catalog",
     title: "Semantic Data Catalog",
-    url: "http://localhost/semantic-data-catalog/",
+    url: "/semantic-data-catalog/",
   },
   {
     slug: "plasma",
