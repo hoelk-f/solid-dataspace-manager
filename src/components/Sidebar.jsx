@@ -59,10 +59,15 @@ function Sidebar() {
         </Link>
 
         <div className="sb-section">Consume and Provide</div>
-        <Link to="/web/catalog" className="sb-link">
+        <a
+          href="/semantic-data-catalog/"
+          className="sb-link"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           <FontAwesomeIcon icon={faBookOpen} />
           <span>Semantic Data Catalog</span>
-        </Link>
+        </a>
         <Link to="/web/plasma" className="sb-link">
           <FontAwesomeIcon icon={faHexagonNodes} />
           <span>PLASMA</span>

@@ -1,10 +1,5 @@
 export const externalLinks = [
   {
-    slug: "catalog",
-    title: "Semantic Data Catalog",
-    url: "/semantic-data-catalog/",
-  },
-  {
     slug: "plasma",
     title: "PLASMA",
     url: "http://plasma.uni-wuppertal.de/modelings",
