@@ -93,7 +93,24 @@ function FilesView({
   crumbs,
 }) {
   const [hideTtl, setHideTtl] = useState(true);
-  const visibleItems = hideTtl ? items.filter((url) => !url.toLowerCase().endsWith(".ttl")) : items;
+  const visibleItems = (hideTtl
+    ? items.filter((item) => !item.url.toLowerCase().endsWith(".ttl"))
+    : items
+  )
+    .slice()
+    .sort((a, b) => {
+      const aIsFolder = a.url.endsWith("/");
+      const bIsFolder = b.url.endsWith("/");
+      if (aIsFolder && !bIsFolder) return -1;
+      if (!aIsFolder && bIsFolder) return 1;
+      const nameA = decodeURIComponent(
+        a.url.replace(currentUrl, "").replace(/\/$/, "")
+      ).toLowerCase();
+      const nameB = decodeURIComponent(
+        b.url.replace(currentUrl, "").replace(/\/$/, "")
+      ).toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
   return (
     <>
       <div className="toolbar">
@@ -145,12 +162,15 @@ function FilesView({
               <thead>
                 <tr>
                   <th>Name</th>
+                  <th>Last Modified</th>
                   <th className="th-actions">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {visibleItems.map((url) => {
-                  const name = decodeURIComponent(url.replace(currentUrl, "").replace(/\/$/, ""));
+                {visibleItems.map(({ url, lastModified }) => {
+                  const name = decodeURIComponent(
+                    url.replace(currentUrl, "").replace(/\/$/, "")
+                  );
                   const isFolder = url.endsWith("/");
                   return (
                     <tr key={url}>
@@ -163,6 +183,11 @@ function FilesView({
                           className={`file-icon ${isFolder ? "folder" : "file"}`}
                         />
                         {name}
+                      </td>
+                      <td>
+                        {lastModified
+                          ? new Date(lastModified).toLocaleString()
+                          : "-"}
                       </td>
                       <td className="actions-cell">
                         <button
@@ -268,7 +293,20 @@ export default function DataManager({ webId }) {
       setLoading(true);
       const dataset = await getSolidDataset(url, { fetch: noCacheFetch });
       const containedUrls = getContainedResourceUrlAll(dataset);
-      setItems(containedUrls);
+      const itemInfos = await Promise.all(
+        containedUrls.map(async (itemUrl) => {
+          try {
+            const res = await noCacheFetch(itemUrl, { method: "HEAD" });
+            return {
+              url: itemUrl,
+              lastModified: res.headers.get("Last-Modified"),
+            };
+          } catch {
+            return { url: itemUrl, lastModified: null };
+          }
+        })
+      );
+      setItems(itemInfos);
     } catch {} finally {
       setLoading(false);
     }
