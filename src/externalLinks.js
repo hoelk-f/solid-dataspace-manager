@@ -10,9 +10,9 @@ export const externalLinks = [
     url: "/node-red/",
   },
   {
-    slug: "fuseki",
-    title: "Fuseki",
-    url: "/fuseki/",
+    slug: "semantic-search",
+    title: "Semantic Search",
+    url: "http://localhost:3030/",
   },
   {
     slug: "urban-heat-monitoring",
