@@ -53,6 +53,11 @@
   width: 100%;
 }
 
+.file-table th:nth-child(2),
+.file-table td:nth-child(2) {
+  white-space: nowrap;
+}
+
 .actions-cell {
   display: flex;
   justify-content: flex-end;
