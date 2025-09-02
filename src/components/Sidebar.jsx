@@ -76,6 +76,10 @@ function Sidebar() {
           <FontAwesomeIcon icon={faDatabase} />
           <span>Node-RED</span>
         </Link>
+        <Link to="/web/fuseki" className="sb-link">
+          <FontAwesomeIcon icon={faServer} />
+          <span>Fuseki</span>
+        </Link>
 
         <div className="sb-section">Applications</div>
         <Link to="/web/urban-heat-monitoring" className="sb-link">

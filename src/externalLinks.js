@@ -10,6 +10,11 @@ export const externalLinks = [
     url: "/node-red/",
   },
   {
+    slug: "fuseki",
+    title: "Fuseki",
+    url: "/fuseki/",
+  },
+  {
     slug: "urban-heat-monitoring",
     title: "Urban Heat Monitoring",
     url: "/smart-city-urban-heat-monitoring/",
