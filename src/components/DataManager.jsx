@@ -40,6 +40,33 @@ const noCacheFetch = (input, init = {}) =>
     headers: { ...(init.headers || {}), "Cache-Control": "no-cache" }
   });
 
+function guessContentType(filename, fallback = "application/octet-stream") {
+  const ext = filename.split(".").pop()?.toLowerCase();
+  switch (ext) {
+    case "ttl":
+      return "text/turtle";
+    case "json":
+      return "application/json";
+    case "csv":
+      return "text/csv";
+    case "png":
+      return "image/png";
+    case "jpg":
+    case "jpeg":
+      return "image/jpeg";
+    case "gif":
+      return "image/gif";
+    case "webp":
+      return "image/webp";
+    case "svg":
+      return "image/svg+xml";
+    case "txt":
+      return "text/plain";
+    default:
+      return fallback;
+  }
+}
+
 function TopHeader() {
   return (
     <div className="toolbar toolbar--title">
@@ -216,7 +243,7 @@ export default function DataManager({ webId }) {
         const targetUrl = currentUrl + file.name;
         try {
           await overwriteFile(targetUrl, file, {
-            contentType: file.type,
+            contentType: file.type || guessContentType(file.name),
             fetch: noCacheFetch,
           });
         } catch {}
@@ -343,7 +370,7 @@ export default function DataManager({ webId }) {
       const targetUrl = currentUrl + file.name;
       try {
         await overwriteFile(targetUrl, file, {
-          contentType: file.type,
+          contentType: file.type || guessContentType(file.name),
           fetch: noCacheFetch,
         });
         await loadItems(currentUrl);
