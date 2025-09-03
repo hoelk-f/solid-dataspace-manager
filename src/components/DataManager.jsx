@@ -354,14 +354,25 @@ export default function DataManager({ webId }) {
     }
   };
 
+  const deleteRecursive = async (url) => {
+    if (url.endsWith("/")) {
+      try {
+        const dataset = await getSolidDataset(url, { fetch: noCacheFetch });
+        const contained = getContainedResourceUrlAll(dataset);
+        for (const item of contained) {
+          await deleteRecursive(item);
+        }
+      } catch {}
+      await deleteContainer(url, { fetch: noCacheFetch });
+    } else {
+      await deleteFile(url, { fetch: noCacheFetch });
+    }
+  };
+
   const deleteItem = async (url) => {
     if (!window.confirm("Delete permanently?")) return;
     try {
-      if (url.endsWith("/")) {
-        await deleteContainer(url, { fetch: noCacheFetch });
-      } else {
-        await deleteFile(url, { fetch: noCacheFetch });
-      }
+      await deleteRecursive(url);
       await loadItems(currentUrl);
     } catch {
       alert("Delete failed.");
