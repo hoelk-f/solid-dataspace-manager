@@ -218,14 +218,16 @@ function FilesView({
                             <FontAwesomeIcon icon={faDownload} />
                           </button>
                         )}
-                        <button
-                          onClick={() => shareItem(url)}
-                          className="icon-btn share"
-                          title="Share"
-                          aria-label="Share"
-                        >
-                          <FontAwesomeIcon icon={faShareNodes} />
-                        </button>
+                        {!isFolder && (
+                          <button
+                            onClick={() => shareItem(url)}
+                            className="icon-btn share"
+                            title="Share"
+                            aria-label="Share"
+                          >
+                            <FontAwesomeIcon icon={faShareNodes} />
+                          </button>
+                        )}
                         <button
                           onClick={() => deleteItem(url)}
                           className="icon-btn delete"
