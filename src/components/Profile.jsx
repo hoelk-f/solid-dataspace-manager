@@ -19,6 +19,7 @@ import {
 import { fetch } from "@inrupt/solid-client-authn-browser";
 import { VCARD, FOAF } from "@inrupt/vocab-common-rdf";
 import "./Profile.css";
+import AlertModal from "./AlertModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUserCircle, faPen, faPlus, faTrash,
@@ -130,6 +131,13 @@ export default function Profile({ webId }) {
   const [photoSrc, setPhotoSrc] = useState("");
   const [editBasics, setEditBasics] = useState(false);
   const [editContact, setEditContact] = useState(false);
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
+
+  const showAlert = (msg) => {
+    setAlertMessage(msg);
+    setAlertOpen(true);
+  };
 
   const profileDocUrl = webId ? webId.split("#")[0] : "";
 
@@ -185,7 +193,7 @@ export default function Profile({ webId }) {
         setPhotoIri(ph);
       } catch (e) {
         console.error("Loading profile failed:", e);
-        alert("Profile could not be loaded.");
+        showAlert("Profile could not be loaded.");
       } finally {
         setLoading(false);
       }
@@ -249,7 +257,7 @@ export default function Profile({ webId }) {
       const url = await uploadAvatar(file);
       setPhotoIri(url);
     } catch {
-      alert("Avatar upload failed.");
+      showAlert("Avatar upload failed.");
     }
   };
 
@@ -286,19 +294,29 @@ export default function Profile({ webId }) {
       setProfileThing(me);
       setEditBasics(false);
       setEditContact(false);
-      alert("Profile saved.");
+      showAlert("Profile saved.");
     } catch (err) {
       console.error("Saving failed:", err);
-      alert("Profile save failed.");
+      showAlert("Profile save failed.");
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <p>Loading profile…</p>;
+  if (loading) return (
+    <>
+      <p>Loading profile…</p>
+      <AlertModal
+        show={alertOpen}
+        message={alertMessage}
+        onClose={() => setAlertOpen(false)}
+      />
+    </>
+  );
 
   return (
-    <form className="pf-wrap" onSubmit={onSave}>
+    <>
+      <form className="pf-wrap" onSubmit={onSave}>
       <div className="pf-head">
         <h2>Your Profile</h2>
       </div>
@@ -376,6 +394,12 @@ export default function Profile({ webId }) {
           {saving ? "Saving…" : "Save"}
         </button>
       </div>
-    </form>
+      </form>
+      <AlertModal
+        show={alertOpen}
+        message={alertMessage}
+        onClose={() => setAlertOpen(false)}
+      />
+    </>
   );
 }
