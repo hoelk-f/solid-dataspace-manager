@@ -26,7 +26,8 @@ import {
   faPen,
   faTrash,
   faDownload,
-  faShareNodes
+  faShareNodes,
+  faChevronRight
 } from "@fortawesome/free-solid-svg-icons";
 import "./DataManager.css";
 import CreateFolderModal from "./CreateFolderModal";
@@ -117,7 +118,12 @@ function FilesView({
         <div className="crumb">
           {crumbs.map((crumb, index) => (
             <React.Fragment key={crumb.url}>
-              {index > 0 && <span className="crumb-separator">&gt;</span>}
+              {index > 0 && (
+                <FontAwesomeIcon
+                  icon={faChevronRight}
+                  className="crumb-separator"
+                />
+              )}
               {index === crumbs.length - 1 ? (
                 <span>{crumb.name}</span>
               ) : (
