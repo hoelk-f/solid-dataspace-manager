@@ -33,6 +33,8 @@ import "./DataManager.css";
 import CreateFolderModal from "./CreateFolderModal";
 import ShareFileModal from "./ShareFileModal";
 import RenameItemModal from "./RenameItemModal";
+import AlertModal from "./AlertModal";
+import DeleteConfirmModal from "./DeleteConfirmModal";
 
 const noCacheFetch = (input, init = {}) =>
   solidFetch(input, {
@@ -353,6 +355,16 @@ export default function DataManager({ webId }) {
   const [renameTargetUrl, setRenameTargetUrl] = useState("");
   const [renameCurrentName, setRenameCurrentName] = useState("");
 
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteTargetUrl, setDeleteTargetUrl] = useState("");
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
+
+  const showAlert = (msg) => {
+    setAlertMessage(msg);
+    setAlertOpen(true);
+  };
+
   const openCreateFolderModal = () => setFolderModalOpen(true);
 
   const handleCreateFolder = async (name) => {
@@ -362,7 +374,7 @@ export default function DataManager({ webId }) {
       await createContainerAt(folderUrl, { fetch: noCacheFetch });
       await loadItems(currentUrl);
     } catch {
-      alert("Failed to create folder.");
+      showAlert("Failed to create folder.");
     }
   };
 
@@ -381,13 +393,21 @@ export default function DataManager({ webId }) {
     }
   };
 
-  const deleteItem = async (url) => {
-    if (!window.confirm("Delete permanently?")) return;
+  const openDeleteModal = (url) => {
+    setDeleteTargetUrl(url);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTargetUrl) return;
     try {
-      await deleteRecursive(url);
+      await deleteRecursive(deleteTargetUrl);
       await loadItems(currentUrl);
     } catch {
-      alert("Delete failed.");
+      showAlert("Delete failed.");
+    } finally {
+      setDeleteModalOpen(false);
+      setDeleteTargetUrl("");
     }
   };
 
@@ -412,7 +432,7 @@ export default function DataManager({ webId }) {
       else await deleteFile(url, { fetch: noCacheFetch });
       await loadItems(currentUrl);
     } catch {
-      alert("Rename failed.");
+      showAlert("Rename failed.");
     }
   };
 
@@ -436,7 +456,7 @@ export default function DataManager({ webId }) {
         });
         await loadItems(currentUrl);
       } catch {
-        alert("Upload failed.");
+        showAlert("Upload failed.");
       }
     };
     input.click();
@@ -453,7 +473,7 @@ export default function DataManager({ webId }) {
       a.click();
       a.remove();
     } catch {
-      alert("Download failed.");
+      showAlert("Download failed.");
     }
   };
 
@@ -491,7 +511,7 @@ export default function DataManager({ webId }) {
       setShareTargetUrl(url);
       setShareModalOpen(true);
     } catch {
-      alert("Failed to load ACL.");
+      showAlert("Failed to load ACL.");
     }
   };
 
@@ -504,7 +524,7 @@ export default function DataManager({ webId }) {
       await saveAclFor(resource, updatedAcl, { fetch: noCacheFetch });
       loadShareAgents(updatedAcl);
     } catch {
-      alert("Sharing failed.");
+      showAlert("Sharing failed.");
     }
   };
 
@@ -517,7 +537,7 @@ export default function DataManager({ webId }) {
       await saveAclFor(resource, updatedAcl, { fetch: noCacheFetch });
       loadShareAgents(updatedAcl);
     } catch {
-      alert("Failed to remove access.");
+      showAlert("Failed to remove access.");
     }
   };
 
@@ -532,7 +552,7 @@ export default function DataManager({ webId }) {
         uploadFile={uploadFile}
         navigateTo={navigateTo}
         renameItem={openRenameModal}
-        deleteItem={deleteItem}
+        deleteItem={openDeleteModal}
         downloadFile={downloadFile}
         shareItem={openShareModal}
         crumbs={computeCrumbs()}
@@ -562,6 +582,19 @@ export default function DataManager({ webId }) {
         }}
         onRename={handleRenameSubmit}
         currentName={renameCurrentName}
+      />
+      <DeleteConfirmModal
+        show={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setDeleteTargetUrl("");
+        }}
+        onConfirm={handleDelete}
+      />
+      <AlertModal
+        show={alertOpen}
+        message={alertMessage}
+        onClose={() => setAlertOpen(false)}
       />
     </>
   );
