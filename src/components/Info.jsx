@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faTableColumns,
   faBookOpen,
+  faMagnifyingGlass,
   faHexagonNodes,
   faDatabase,
   faTemperatureHigh,
@@ -46,6 +47,16 @@ function Info() {
         <p>
           The catalog is the entry point to the dataspace. It allows providers to publish datasets and
           consumers to discover and reuse data sources hosted in Pods.
+        </p>
+      </div>
+
+      <div className="info-section">
+        <h2>
+          <FontAwesomeIcon icon={faMagnifyingGlass} /> Semantic Search
+        </h2>
+        <p>
+          Semantic Search provides a Fuseki store for querying the Semantic Data Catalog using SPARQL.
+          Use the credentials <code>admin</code> for both username and password to sign in.
         </p>
       </div>
 
