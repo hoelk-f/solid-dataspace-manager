@@ -5,7 +5,6 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faTableColumns,
   faBookOpen,
-  faMagnifyingGlass,
   faHexagonNodes,
   faDatabase,
   faUser,
@@ -69,10 +68,6 @@ function Sidebar() {
           <FontAwesomeIcon icon={faBookOpen} />
           <span>Semantic Data Catalog</span>
         </a>
-        <Link to="/web/semantic-search" className="sb-link">
-          <FontAwesomeIcon icon={faMagnifyingGlass} />
-          <span>Semantic Search</span>
-        </Link>
         <Link to="/web/plasma" className="sb-link">
           <FontAwesomeIcon icon={faHexagonNodes} />
           <span>PLASMA</span>
