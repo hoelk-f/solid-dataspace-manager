@@ -33,10 +33,7 @@ function Sidebar() {
     <aside className="sidebar">
       <div className="sb-brand">
         <div className="sb-logo">
-          <img src="/Icon_GesundesTal.png" alt="TMDT Logo" />
-        </div>
-        <div className="sb-logo">
-          <img src="/Icon_DigitalerZwilling.png" alt="Digital Twin Logo" />
+          <img src="/Logo_TMDT.png" alt="TMDT Logo" />
         </div>
       </div>
 
