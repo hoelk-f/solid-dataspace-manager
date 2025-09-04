@@ -194,10 +194,12 @@ function FilesView({
                       </td>
                       <td>
                         {lastModified
-                          ? new Date(lastModified).toLocaleDateString("de-DE", {
+                          ? new Date(lastModified).toLocaleString("de-DE", {
                               day: "2-digit",
                               month: "2-digit",
                               year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
                             })
                           : "-"}
                       </td>
