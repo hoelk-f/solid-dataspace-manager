@@ -32,7 +32,7 @@ const App = () => {
     await login({
       oidcIssuer: issuer,
       redirectUrl: window.location.href,
-      clientName: "Solid Data Manager",
+      clientName: "Solid Dataspace",
     });
   };
 
