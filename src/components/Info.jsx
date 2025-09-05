@@ -21,7 +21,7 @@ function Info() {
         <div />
       </div>
       <p className="info-intro">
-        Solid Dataspace is a prototype dataspace built on Solid, the decentralised data platform
+        Solid Dataspace Manager is a prototype dataspace built on Solid, the decentralised data platform
         initiated by web inventor Tim Berners-Lee. Solid lets individuals store information in personal
         online data stores called Pods that they control. Using open standards for authentication and
         data interchange, Pods allow people to decide where their data lives, who can access it, and to
@@ -92,7 +92,7 @@ function Info() {
           PLASMA adds semantic annotations before datasets are published in the Semantic Data Catalog.
           People manage their Pods through the Data Manager and Profile Manager, while applications such
           as Urban Heat Monitoring reuse the catalogued resources. Together these components form the
-          Solid Dataspace.
+          Solid Dataspace Manager.
         </p>
       </div>
     </div>

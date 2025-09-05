@@ -14,7 +14,7 @@ const App = () => {
   const [sessionActive, setSessionActive] = useState(false);
 
   useEffect(() => {
-    document.title = "Solid Dataspace";
+    document.title = "Solid Dataspace Manager";
     handleIncomingRedirect({ restorePreviousSession: true }).then(() => {
       const session = getDefaultSession();
       if (session.info.isLoggedIn) {
@@ -32,7 +32,7 @@ const App = () => {
     await login({
       oidcIssuer: issuer,
       redirectUrl: window.location.href,
-      clientName: "Solid Dataspace",
+      clientName: "Solid Dataspace Manager",
     });
   };
 
