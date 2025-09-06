@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { getDefaultSession, login, handleIncomingRedirect } from "@inrupt/solid-client-authn-browser";
+import session, { restoreSession } from "./solidSession";
 import "./App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
@@ -15,8 +15,7 @@ const App = () => {
 
   useEffect(() => {
     document.title = "Solid Dataspace Manager";
-    handleIncomingRedirect({ restorePreviousSession: true }).then(() => {
-      const session = getDefaultSession();
+    restoreSession().then(() => {
       if (session.info.isLoggedIn) {
         const w = session.info.webId;
         if (w) {
@@ -29,7 +28,7 @@ const App = () => {
 
   const loginToSolid = async (issuer) => {
     if (!issuer) return;
-    await login({
+    await session.login({
       oidcIssuer: issuer,
       redirectUrl: window.location.href,
       clientName: "Solid Dataspace Manager",
