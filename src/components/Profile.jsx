@@ -16,7 +16,7 @@ import {
   overwriteFile,
   createContainerAt,
 } from "@inrupt/solid-client";
-import { fetch } from "@inrupt/solid-client-authn-browser";
+import session from "../solidSession";
 import { VCARD, FOAF } from "@inrupt/vocab-common-rdf";
 import "./Profile.css";
 import AlertModal from "./AlertModal";
@@ -146,7 +146,7 @@ export default function Profile({ webId }) {
     (async () => {
       try {
         setLoading(true);
-        const ds = await getSolidDataset(profileDocUrl, { fetch });
+        const ds = await getSolidDataset(profileDocUrl, { fetch: session.fetch });
         setDataset(ds);
         let me = getThing(ds, webId) || getThingAll(ds).find((t) => t.url === webId);
         if (!me) me = createThing({ url: webId });
@@ -206,7 +206,7 @@ export default function Profile({ webId }) {
     (async () => {
       try {
         if (!photoIri) { setPhotoSrc(""); return; }
-        const res = await fetch(photoIri);
+        const res = await session.fetch(photoIri);
         if (!res.ok) throw new Error(`Avatar ${res.status}`);
         const blob = await res.blob();
         objectUrl = URL.createObjectURL(blob);
@@ -228,10 +228,10 @@ export default function Profile({ webId }) {
 
     const ensureContainer = async (containerUrl) => {
       try {
-        await getSolidDataset(containerUrl, { fetch });
+        await getSolidDataset(containerUrl, { fetch: session.fetch });
       } catch (e) {
         if (e?.statusCode === 404 || e?.response?.status === 404) {
-          await createContainerAt(containerUrl, { fetch });
+          await createContainerAt(containerUrl, { fetch: session.fetch });
         } else {
           throw e;
         }
@@ -245,7 +245,7 @@ export default function Profile({ webId }) {
     const targetUrl = `${profileUrl}avatar-${Date.now()}.${ext}`;
     await overwriteFile(targetUrl, file, {
       contentType: file.type || guessContentType(file.name, "image/*"),
-      fetch,
+      fetch: session.fetch,
     });
     return targetUrl;
   };
@@ -288,7 +288,7 @@ export default function Profile({ webId }) {
       }
 
       ds = setThing(ds, me);
-      await saveSolidDatasetAt(profileDocUrl, ds, { fetch });
+      await saveSolidDatasetAt(profileDocUrl, ds, { fetch: session.fetch });
 
       setDataset(ds);
       setProfileThing(me);

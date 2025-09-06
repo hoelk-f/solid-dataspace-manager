@@ -16,7 +16,7 @@ import {
   getAgentResourceAccessAll,
   saveAclFor,
 } from "@inrupt/solid-client";
-import { fetch as solidFetch } from "@inrupt/solid-client-authn-browser";
+import session from "../solidSession";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faFolder,
@@ -37,7 +37,7 @@ import AlertModal from "./AlertModal";
 import DeleteConfirmModal from "./DeleteConfirmModal";
 
 const noCacheFetch = (input, init = {}) =>
-  solidFetch(input, {
+  session.fetch(input, {
     ...init,
     cache: "no-store",
     headers: { ...(init.headers || {}), "Cache-Control": "no-cache" }

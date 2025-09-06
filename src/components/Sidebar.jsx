@@ -13,7 +13,7 @@ import {
   faFile,
   faServer
 } from "@fortawesome/free-solid-svg-icons";
-import { logout } from "@inrupt/solid-client-authn-browser";
+import session from "../solidSession";
 import "./Sidebar.css";
 
 function Sidebar() {
@@ -22,7 +22,7 @@ function Sidebar() {
 
   const handleLogout = async () => {
     try {
-      await logout();
+      await session.logout();
       window.location.href = "/";
     } catch (e) {
       console.error("Logout failed:", e);
