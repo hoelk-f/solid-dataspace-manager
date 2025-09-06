@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import session, { restoreSession } from "./solidSession";
+import session from "./solidSession";
 import "./App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
@@ -15,15 +15,13 @@ const App = () => {
 
   useEffect(() => {
     document.title = "Solid Dataspace Manager";
-    restoreSession().then(() => {
-      if (session.info.isLoggedIn) {
-        const w = session.info.webId;
-        if (w) {
-          setWebId(w);
-          setSessionActive(true);
-        }
+    if (session.info.isLoggedIn) {
+      const w = session.info.webId;
+      if (w) {
+        setWebId(w);
+        setSessionActive(true);
       }
-    });
+    }
   }, []);
 
   const loginToSolid = async (issuer) => {
