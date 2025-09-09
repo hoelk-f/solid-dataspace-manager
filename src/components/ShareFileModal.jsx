@@ -5,24 +5,19 @@ import "./Modal.css";
 
 const ShareFileModal = ({ show, onClose, onShare, onRemove, existing = [] }) => {
   const [webId, setWebId] = useState("");
-  const [access, setAccess] = useState({
-    read: true,
-    append: false,
-    write: false,
-    control: false,
-  });
-
-  const toggle = (e) => {
-    const { name, checked } = e.target;
-    setAccess((prev) => ({ ...prev, [name]: checked }));
-  };
+  const [grantAccess, setGrantAccess] = useState(false);
 
   const handleSubmit = async () => {
     const id = webId.trim();
-    if (!id) return;
-    await onShare(id, access);
+    if (!id || !grantAccess) return;
+    await onShare(id, {
+      read: true,
+      append: true,
+      write: true,
+      control: true,
+    });
     setWebId("");
-    setAccess({ read: true, append: false, write: false, control: false });
+    setGrantAccess(false);
   };
 
   if (!show) return null;
@@ -45,10 +40,9 @@ const ShareFileModal = ({ show, onClose, onShare, onRemove, existing = [] }) => 
                   <li key={id} className="acl-item">
                     <span className="acl-webid">{id}</span>
                     <span className="acl-perms">
-                      {Object.entries(access)
-                        .filter(([, v]) => v)
-                        .map(([k]) => k)
-                        .join(", ")}
+                      {Object.values(access).some((v) => v)
+                        ? "Access"
+                        : "No access"}
                     </span>
                     <button
                       className="acl-remove"
@@ -76,43 +70,16 @@ const ShareFileModal = ({ show, onClose, onShare, onRemove, existing = [] }) => 
             />
           </div>
           <div className="form-group" style={{ marginTop: "1rem" }}>
-            <span className="modal-label">Permissions</span>
+            <span className="modal-label">Access</span>
             <div className="modal-checkboxes">
               <label>
                 <input
                   type="checkbox"
-                  name="read"
-                  checked={access.read}
-                  onChange={toggle}
+                  name="access"
+                  checked={grantAccess}
+                  onChange={(e) => setGrantAccess(e.target.checked)}
                 />
-                Read
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  name="append"
-                  checked={access.append}
-                  onChange={toggle}
-                />
-                Append
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  name="write"
-                  checked={access.write}
-                  onChange={toggle}
-                />
-                Write
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  name="control"
-                  checked={access.control}
-                  onChange={toggle}
-                />
-                Control
+                Access
               </label>
             </div>
           </div>
@@ -124,7 +91,7 @@ const ShareFileModal = ({ show, onClose, onShare, onRemove, existing = [] }) => 
           <button
             className="btn btn-primary"
             onClick={handleSubmit}
-            disabled={!webId.trim()}
+            disabled={!webId.trim() || !grantAccess}
           >
             Share
           </button>
