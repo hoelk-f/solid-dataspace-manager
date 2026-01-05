@@ -2,6 +2,10 @@
 
 Solid Dataspace Manager is a web application for managing data in Solid Pods and authenticating with Solid.
 
+## Access Request Inbox
+
+The manager includes an inbox UI for Solid access request notifications. Dataset owners can review requests, approve or deny access, and optionally set an expiry date.
+
 ## Available Scripts
 
 In the project directory, you can run:
