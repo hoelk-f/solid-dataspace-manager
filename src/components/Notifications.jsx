@@ -31,7 +31,9 @@ import "./Notifications.css";
 const SDM_NS = "https://w3id.org/solid-dataspace-manager#";
 const SDM = {
   AccessRequest: `${SDM_NS}AccessRequest`,
+  AccessDecision: `${SDM_NS}AccessDecision`,
   status: `${SDM_NS}status`,
+  decision: `${SDM_NS}decision`,
   requesterWebId: `${SDM_NS}requesterWebId`,
   requesterName: `${SDM_NS}requesterName`,
   requesterEmail: `${SDM_NS}requesterEmail`,
@@ -49,6 +51,12 @@ const SDM = {
 
 const DCT_CREATED = "http://purl.org/dc/terms/created";
 const DCT_TITLE = "http://purl.org/dc/terms/title";
+
+const escapeLiteral = (value = "") =>
+  value
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/\r?\n/g, "\\n");
 
 const noCacheFetch = (input, init = {}) =>
   session.fetch(input, {
@@ -87,6 +95,74 @@ const Notifications = ({ webId }) => {
     const profileDataset = await getSolidDataset(webId, { fetch: noCacheFetch });
     const profile = getThing(profileDataset, webId);
     return profile ? getUrl(profile, LDP.inbox) : null;
+  };
+
+  const resolveInboxForWebId = async (targetWebId) => {
+    if (!targetWebId) return null;
+    const profileDataset = await getSolidDataset(targetWebId, { fetch: noCacheFetch });
+    const profile = getThing(profileDataset, targetWebId);
+    return profile ? getUrl(profile, LDP.inbox) : null;
+  };
+
+  const buildDecisionTurtle = ({ item, decision, note, expiresAt, decidedAt }) => {
+    const lines = [
+      "@prefix sdm: <" + SDM_NS + ">.",
+      "@prefix dct: <http://purl.org/dc/terms/>.",
+      "@prefix as: <https://www.w3.org/ns/activitystreams#>.",
+      "@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.",
+      "",
+      "<> a sdm:AccessDecision, as:Offer;",
+      `  dct:created "${decidedAt}"^^xsd:dateTime;`,
+      `  sdm:decision "${escapeLiteral(decision)}";`,
+      `  sdm:requesterWebId <${item.requesterWebId}>;`,
+      `  sdm:datasetIdentifier "${escapeLiteral(item.datasetIdentifier || "")}";`,
+      `  sdm:datasetTitle "${escapeLiteral(item.datasetTitle || "")}";`,
+      `  dct:title "${escapeLiteral(item.datasetTitle || "")}";`,
+    ];
+
+    if (item.datasetAccessUrl) {
+      lines.push(`  sdm:datasetAccessUrl <${item.datasetAccessUrl}>;`);
+    }
+    if (item.datasetSemanticModelUrl) {
+      lines.push(`  sdm:datasetSemanticModelUrl <${item.datasetSemanticModelUrl}>;`);
+    }
+    if (item.catalogUrl) {
+      lines.push(`  sdm:catalogUrl <${item.catalogUrl}>;`);
+    }
+    if (note) {
+      lines.push(`  sdm:decisionComment "${escapeLiteral(note)}";`);
+    }
+    if (expiresAt) {
+      lines.push(`  sdm:expiresAt "${escapeLiteral(expiresAt)}";`);
+    }
+
+    lines.push("  .");
+    return lines.join("\n");
+  };
+
+  const notifyRequester = async ({ item, decision, note, expiresAt, decidedAt }) => {
+    try {
+      const inboxUrl = await resolveInboxForWebId(item.requesterWebId);
+      if (!inboxUrl) {
+        console.warn("[AccessDecision] requester inbox missing", item.requesterWebId);
+        return;
+      }
+
+      const turtle = buildDecisionTurtle({ item, decision, note, expiresAt, decidedAt });
+      const res = await session.fetch(inboxUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/turtle",
+          "Slug": `access-decision-${item.datasetIdentifier || "dataset"}-${Date.now()}`,
+        },
+        body: turtle,
+      });
+      if (!res.ok) {
+        console.warn("[AccessDecision] inbox rejected", res.status);
+      }
+    } catch (err) {
+      console.warn("[AccessDecision] notify failed", err);
+    }
   };
 
   const loadNotificationThing = async (url) => {
@@ -288,6 +364,14 @@ const Notifications = ({ webId }) => {
         expiresAt: expiryIso,
         decidedAt: now,
         decidedBy: webId,
+      });
+
+      await notifyRequester({
+        item,
+        decision,
+        note,
+        expiresAt: expiryIso,
+        decidedAt: now,
       });
 
       console.warn("[AccessRequest] decision saved", {
