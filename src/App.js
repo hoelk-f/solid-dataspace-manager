@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import session from "./solidSession";
+import session, { setLoginReturnTo, getSharedRedirectUrlForLogin } from "./solidSession";
 import "./App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
@@ -28,9 +28,10 @@ const App = () => {
 
   const loginToSolid = async (issuer) => {
     if (!issuer) return;
+    setLoginReturnTo();
     await session.login({
       oidcIssuer: issuer,
-      redirectUrl: window.location.href,
+      redirectUrl: getSharedRedirectUrlForLogin(),
       clientName: "Solid Dataspace Manager",
     });
   };
