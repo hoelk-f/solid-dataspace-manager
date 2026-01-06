@@ -47,6 +47,7 @@ const SDM = {
 };
 
 const DCT_CREATED = "http://purl.org/dc/terms/created";
+const DCT_TITLE = "http://purl.org/dc/terms/title";
 
 const noCacheFetch = (input, init = {}) =>
   session.fetch(input, {
@@ -101,7 +102,10 @@ const Notifications = ({ webId }) => {
       requesterName: getStringNoLocale(thing, SDM.requesterName) || "",
       requesterEmail: getStringNoLocale(thing, SDM.requesterEmail) || "",
       datasetIdentifier: getStringNoLocale(thing, SDM.datasetIdentifier) || "",
-      datasetTitle: getStringNoLocale(thing, SDM.datasetTitle) || "",
+      datasetTitle:
+        getStringNoLocale(thing, SDM.datasetTitle) ||
+        getStringNoLocale(thing, DCT_TITLE) ||
+        "",
       datasetAccessUrl: getUrl(thing, SDM.datasetAccessUrl) || "",
       datasetSemanticModelUrl: getUrl(thing, SDM.datasetSemanticModelUrl) || "",
       catalogUrl: getUrl(thing, SDM.catalogUrl) || "",
@@ -255,9 +259,21 @@ const Notifications = ({ webId }) => {
       const expiryIso = expiryInput ? new Date(expiryInput).toISOString() : "";
       const now = new Date().toISOString();
 
+      console.info("[AccessRequest] decision", {
+        decision,
+        requesterWebId: item.requesterWebId,
+        datasetAccessUrl: item.datasetAccessUrl,
+        datasetSemanticModelUrl: item.datasetSemanticModelUrl,
+        expiresAt: expiryIso || null,
+        inboxItem: item.id,
+      });
+
       if (decision === "approved") {
         await setAccessForResource(item.datasetAccessUrl, item.requesterWebId, { read: true });
         await setAccessForResource(item.datasetSemanticModelUrl, item.requesterWebId, { read: true });
+      } else if (decision === "revoked") {
+        await setAccessForResource(item.datasetAccessUrl, item.requesterWebId, {});
+        await setAccessForResource(item.datasetSemanticModelUrl, item.requesterWebId, {});
       }
 
       await updateNotification(item.id, {
@@ -266,6 +282,11 @@ const Notifications = ({ webId }) => {
         expiresAt: expiryIso,
         decidedAt: now,
         decidedBy: webId,
+      });
+
+      console.info("[AccessRequest] decision saved", {
+        decision,
+        inboxItem: item.id,
       });
 
       await loadNotifications();
@@ -411,6 +432,17 @@ const Notifications = ({ webId }) => {
                       <FontAwesomeIcon icon={faXmark} /> Deny
                     </button>
                   </div>
+                </div>
+              )}
+              {item.status === "approved" && (
+                <div className="notification-buttons">
+                  <button
+                    className="btn-deny"
+                    onClick={() => handleDecision(item, "revoked")}
+                    disabled={processingId === item.id}
+                  >
+                    <FontAwesomeIcon icon={faXmark} /> Revoke
+                  </button>
                 </div>
               )}
             </div>

@@ -97,7 +97,8 @@
 }
 
 .status-denied,
-.status-expired {
+.status-expired,
+.status-revoked {
   background: #fde7e7;
   color: #c62828;
 }
