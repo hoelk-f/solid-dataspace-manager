@@ -56,7 +56,7 @@ const noCacheFetch = (input, init = {}) =>
   });
 
 const formatDateTime = (value) => {
-  if (!value) return "—";
+  if (!value) return "N/A";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString("de-DE", {
@@ -316,7 +316,7 @@ const Notifications = ({ webId }) => {
                     {item.datasetTitle || "Untitled dataset"}
                   </div>
                   <div className="notification-subtitle">
-                    ID: {item.datasetIdentifier || "—"}
+                    ID: {item.datasetIdentifier || "N/A"}
                   </div>
                 </div>
                 <span className={`status-pill status-${item.status}`}>
@@ -326,10 +326,10 @@ const Notifications = ({ webId }) => {
 
               <div className="notification-meta">
                 <div><strong>Requested:</strong> {formatDateTime(item.createdAt)}</div>
-                <div><strong>Requester:</strong> {item.requesterName || "—"}</div>
-                <div><strong>Email:</strong> {item.requesterEmail || "—"}</div>
+                <div><strong>Requester:</strong> {item.requesterName || "N/A"}</div>
+                <div><strong>Email:</strong> {item.requesterEmail || "N/A"}</div>
                 <div className="notification-webid">
-                  <strong>WebID:</strong> {item.requesterWebId || "—"}
+                  <strong>WebID:</strong> {item.requesterWebId || "N/A"}
                 </div>
               </div>
 

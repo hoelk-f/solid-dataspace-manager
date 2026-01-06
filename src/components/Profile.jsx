@@ -1,6 +1,7 @@
 import React, { useEffect, useState, memo } from "react";
 import {
   getSolidDataset,
+  getSolidDatasetWithAcl,
   getThing,
   getThingAll,
   setThing,
@@ -15,15 +16,21 @@ import {
   removeAll,
   overwriteFile,
   createContainerAt,
+  getResourceAcl,
+  hasResourceAcl,
+  hasAccessibleAcl,
+  createAclFromFallbackAcl,
+  setPublicResourceAccess,
+  saveAclFor,
 } from "@inrupt/solid-client";
 import session from "../solidSession";
-import { VCARD, FOAF } from "@inrupt/vocab-common-rdf";
+import { VCARD, FOAF, LDP } from "@inrupt/vocab-common-rdf";
 import "./Profile.css";
 import AlertModal from "./AlertModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUserCircle, faPen, faPlus, faTrash,
-  faEnvelope
+  faEnvelope, faInbox
 } from "@fortawesome/free-solid-svg-icons";
 
 const VCARD_TYPE = "http://www.w3.org/2006/vcard/ns#type";
@@ -39,6 +46,15 @@ function guessContentType(filename, fallback = "application/octet-stream") {
     case "svg": return "image/svg+xml";
     default: return fallback;
   }
+}
+
+function getPodRoot(webId) {
+  const url = new URL(webId);
+  const segments = url.pathname.split("/").filter(Boolean);
+  const profileIndex = segments.indexOf("profile");
+  const baseSegments = profileIndex > -1 ? segments.slice(0, profileIndex) : segments;
+  const basePath = baseSegments.length ? `/${baseSegments.join("/")}/` : "/";
+  return `${url.origin}${basePath}`;
 }
 
 function SectionCard({ title, icon, editing, onEdit, children }) {
@@ -131,6 +147,8 @@ export default function Profile({ webId }) {
   const [photoSrc, setPhotoSrc] = useState("");
   const [editBasics, setEditBasics] = useState(false);
   const [editContact, setEditContact] = useState(false);
+  const [inboxUrl, setInboxUrl] = useState("");
+  const [inboxConfiguring, setInboxConfiguring] = useState(false);
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
 
@@ -191,6 +209,7 @@ export default function Profile({ webId }) {
 
         const ph = getUrl(me, VCARD.hasPhoto) || getUrl(me, FOAF.img) || "";
         setPhotoIri(ph);
+        setInboxUrl(getUrl(me, LDP.inbox) || "");
       } catch (e) {
         console.error("Loading profile failed:", e);
         showAlert("Profile could not be loaded.");
@@ -219,12 +238,7 @@ export default function Profile({ webId }) {
   }, [photoIri]);
 
   const uploadAvatar = async (file) => {
-    const url = new URL(webId);
-    const segments = url.pathname.split("/").filter(Boolean);
-    const profileIndex = segments.indexOf("profile");
-    const baseSegments = profileIndex > -1 ? segments.slice(0, profileIndex) : segments;
-    const basePath = baseSegments.length ? `/${baseSegments.join("/")}/` : "/";
-    const podRoot = `${url.origin}${basePath}`;
+    const podRoot = getPodRoot(webId);
 
     const ensureContainer = async (containerUrl) => {
       try {
@@ -300,6 +314,66 @@ export default function Profile({ webId }) {
       showAlert("Profile save failed.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const getResourceAndAcl = async (url) => {
+    const resource = await getSolidDatasetWithAcl(url, { fetch: session.fetch });
+    let resourceAcl;
+    if (!hasResourceAcl(resource)) {
+      if (!hasAccessibleAcl(resource)) {
+        throw new Error("No access to ACL.");
+      }
+      resourceAcl = createAclFromFallbackAcl(resource);
+    } else {
+      resourceAcl = getResourceAcl(resource);
+    }
+    return { resource, resourceAcl };
+  };
+
+  const configureInbox = async () => {
+    if (!webId || !profileDocUrl) return;
+    try {
+      setInboxConfiguring(true);
+      const targetInboxUrl = `${getPodRoot(webId)}inbox/`;
+      try {
+        await getSolidDataset(targetInboxUrl, { fetch: session.fetch });
+      } catch (e) {
+        if (e?.statusCode === 404 || e?.response?.status === 404) {
+          await createContainerAt(targetInboxUrl, { fetch: session.fetch });
+        } else {
+          throw e;
+        }
+      }
+
+      const { resource, resourceAcl } = await getResourceAndAcl(targetInboxUrl);
+      const updatedAcl = setPublicResourceAccess(resourceAcl, {
+        read: false,
+        append: true,
+        write: false,
+        control: false,
+      });
+      await saveAclFor(resource, updatedAcl, { fetch: session.fetch });
+
+      let ds = dataset;
+      if (!ds) {
+        ds = await getSolidDataset(profileDocUrl, { fetch: session.fetch });
+      }
+      let me = profileThing || createThing({ url: webId });
+      me = removeAll(me, LDP.inbox);
+      me = setUrl(me, LDP.inbox, targetInboxUrl);
+      ds = setThing(ds, me);
+      await saveSolidDatasetAt(profileDocUrl, ds, { fetch: session.fetch });
+
+      setDataset(ds);
+      setProfileThing(me);
+      setInboxUrl(targetInboxUrl);
+      showAlert("Solid inbox configured.");
+    } catch (err) {
+      console.error("Inbox setup failed:", err);
+      showAlert("Inbox setup failed.");
+    } finally {
+      setInboxConfiguring(false);
     }
   };
 
@@ -388,6 +462,46 @@ export default function Profile({ webId }) {
           </div>
         )}
       </SectionCard>
+
+      <div className="pf-card">
+        <div className="pf-card__head">
+          <div className="pf-card__title">
+            <FontAwesomeIcon icon={faInbox} className="pf-card__titleIcon" />
+            <span>Solid Inbox</span>
+          </div>
+        </div>
+        <div className="pf-card__body">
+          <div className="pf-ro">
+            <div className="pf-label">Inbox URL</div>
+            <div className="pf-value">
+              {inboxUrl ? (
+                <a href={inboxUrl} target="_blank" rel="noopener noreferrer">
+                  {inboxUrl}
+                </a>
+              ) : (
+                <span className="pf-muted">Not configured</span>
+              )}
+            </div>
+          </div>
+          <div className="pf-muted" style={{ marginTop: 8 }}>
+            Access requests are delivered to this inbox.
+          </div>
+          <div className="pf-actions" style={{ marginTop: 12 }}>
+            <button
+              type="button"
+              className="pf-btn primary"
+              onClick={configureInbox}
+              disabled={inboxConfiguring}
+            >
+              {inboxConfiguring
+                ? "Configuring..."
+                : inboxUrl
+                  ? "Reconfigure Inbox"
+                  : "Configure Inbox"}
+            </button>
+          </div>
+        </div>
+      </div>
 
       <div className="pf-actions">
         <button type="submit" className="pf-btn primary" disabled={saving}>
