@@ -12,7 +12,8 @@ import {
   faInfo,
   faFile,
   faServer,
-  faInbox
+  faInbox,
+  faBell
 } from "@fortawesome/free-solid-svg-icons";
 import session from "../solidSession";
 import "./Sidebar.css";
@@ -50,6 +51,13 @@ function Sidebar() {
         >
           <FontAwesomeIcon icon={faInbox} />
           <span>Access Requests</span>
+        </Link>
+        <Link
+          to="/decisions"
+          className={"sb-link" + (isActive("/decisions") ? " active" : "")}
+        >
+          <FontAwesomeIcon icon={faBell} />
+          <span>Access Decisions</span>
         </Link>
         <Link
           to="/profile"

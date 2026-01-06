@@ -9,6 +9,7 @@ import Info from "./components/Info";
 import LoginScreen from "./components/LoginScreen";
 import ProfilePage from "./components/ProfilePage";
 import Notifications from "./components/Notifications";
+import DecisionInbox from "./components/DecisionInbox";
 
 const App = () => {
   const [webId, setWebId] = useState("");
@@ -51,6 +52,7 @@ const App = () => {
             <Routes>
               <Route path="/" element={<DataManager webId={webId} />} />
               <Route path="/notifications" element={<Notifications webId={webId} />} />
+              <Route path="/decisions" element={<DecisionInbox webId={webId} />} />
               <Route path="/profile" element={<ProfilePage webId={webId} />} />
               <Route path="/info" element={<Info />} />
               <Route path="/web/:slug" element={<ExternalHost />} />
