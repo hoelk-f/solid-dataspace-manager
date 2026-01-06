@@ -8,12 +8,12 @@
 }
 
 .info-section {
-  background: #fff;
+  background: var(--card);
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 1.2rem 1.4rem;
   margin-bottom: 1.4rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow);
 }
 
 .info-section h2 {

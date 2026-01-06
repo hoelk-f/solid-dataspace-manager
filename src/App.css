@@ -1,10 +1,17 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap");
+
 :root {
-  --primary: #1976d2;
-  --primary-ghost: #eef5ff;
-  --text: #223;
-  --muted: #7a8795;
-  --border: #e8edf4;
-  --danger: #d32f2f;
+  --primary: #1d4ed8;
+  --primary-ghost: #eaf2ff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --danger: #b42318;
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+  --ring: rgba(59, 130, 246, 0.15);
+  --radius: 18px;
 }
 
 * {
@@ -12,9 +19,10 @@
 }
 
 body {
-  font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
-  background: #f4f7fb;
+  font-family: "Manrope", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  background: var(--bg);
   margin: 0;
+  color: var(--text);
 }
 
 .container {

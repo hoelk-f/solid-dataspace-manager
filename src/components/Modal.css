@@ -12,11 +12,11 @@
 }
 
 .modal-box {
-  background: #fff;
-  border-radius: 16px;
+  background: var(--card);
+  border-radius: 18px;
   width: 95%;
   max-width: 800px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow);
 }
 
 .modal-header {
@@ -90,7 +90,7 @@
 }
 
 .btn-primary {
-  background: var(--primary);
+  background: linear-gradient(120deg, #1d4ed8 0%, #2563eb 100%);
   color: #fff;
 }
 
@@ -100,8 +100,8 @@
 }
 
 .btn-secondary {
-  background: #e0e0e0;
-  color: #333;
+  background: #f1f5f9;
+  color: var(--text);
 }
 
 .acl-list {
