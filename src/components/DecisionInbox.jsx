@@ -8,6 +8,7 @@ import {
   getUrl,
   getUrlAll,
   getStringNoLocale,
+  deleteFile,
 } from "@inrupt/solid-client";
 import { LDP, RDF } from "@inrupt/vocab-common-rdf";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -59,6 +60,7 @@ const DecisionInbox = ({ webId }) => {
   const [error, setError] = useState("");
   const [hideRevoked, setHideRevoked] = useState(true);
   const [page, setPage] = useState(1);
+  const [clearingRevoked, setClearingRevoked] = useState(false);
   const pageSize = 5;
 
   const resolveInboxUrl = async () => {
@@ -140,6 +142,26 @@ const DecisionInbox = ({ webId }) => {
     }
   };
 
+  const clearRevoked = async () => {
+    if (!decisions.length) return;
+    const revokedItems = decisions.filter((item) => item.decision === "revoked");
+    if (!revokedItems.length) return;
+    if (!window.confirm(`Delete ${revokedItems.length} revoked decision(s)?`)) return;
+
+    setClearingRevoked(true);
+    try {
+      await Promise.all(
+        revokedItems.map((item) => deleteFile(item.id, { fetch: noCacheFetch }))
+      );
+      await loadDecisions();
+    } catch (err) {
+      console.error("Failed to clear revoked decisions:", err);
+      setError("Failed to clear revoked decisions.");
+    } finally {
+      setClearingRevoked(false);
+    }
+  };
+
   useEffect(() => {
     if (!webId) return;
     loadDecisions();
@@ -186,6 +208,13 @@ const DecisionInbox = ({ webId }) => {
         <div className="notifications-count">
           Showing {filteredDecisions.length} decision(s)
         </div>
+        <button
+          className="pill-btn"
+          onClick={clearRevoked}
+          disabled={clearingRevoked || !decisions.some((item) => item.decision === "revoked")}
+        >
+          {clearingRevoked ? "Clearing..." : "Clear revoked"}
+        </button>
       </div>
 
       {error && <div className="notifications-error">{error}</div>}
