@@ -77,6 +77,9 @@ const Notifications = ({ webId }) => {
   const [decisionNotes, setDecisionNotes] = useState({});
   const [decisionExpiry, setDecisionExpiry] = useState({});
   const [processingId, setProcessingId] = useState("");
+  const [hideRevoked, setHideRevoked] = useState(true);
+  const [page, setPage] = useState(1);
+  const pageSize = 5;
 
   const resolveInboxUrl = async () => {
     const profileDataset = await getSolidDataset(webId, { fetch: noCacheFetch });
@@ -259,7 +262,7 @@ const Notifications = ({ webId }) => {
       const expiryIso = expiryInput ? new Date(expiryInput).toISOString() : "";
       const now = new Date().toISOString();
 
-      console.info("[AccessRequest] decision", {
+      console.warn("[AccessRequest] decision", {
         decision,
         requesterWebId: item.requesterWebId,
         datasetAccessUrl: item.datasetAccessUrl,
@@ -284,7 +287,7 @@ const Notifications = ({ webId }) => {
         decidedBy: webId,
       });
 
-      console.info("[AccessRequest] decision saved", {
+      console.warn("[AccessRequest] decision saved", {
         decision,
         inboxItem: item.id,
       });
@@ -303,6 +306,20 @@ const Notifications = ({ webId }) => {
     loadNotifications();
   }, [webId]);
 
+  const filteredNotifications = notifications.filter((item) =>
+    hideRevoked ? item.status !== "revoked" : true
+  );
+  const totalPages = Math.max(1, Math.ceil(filteredNotifications.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pagedNotifications = filteredNotifications.slice(
+    (safePage - 1) * pageSize,
+    safePage * pageSize
+  );
+
+  useEffect(() => {
+    if (page !== safePage) setPage(safePage);
+  }, [page, safePage]);
+
   return (
     <div className="notifications">
       <div className="notifications-header">
@@ -315,6 +332,22 @@ const Notifications = ({ webId }) => {
           <span>Refresh</span>
         </button>
       </div>
+      <div className="notifications-filters">
+        <label className="notifications-toggle">
+          <input
+            type="checkbox"
+            checked={hideRevoked}
+            onChange={(e) => {
+              setHideRevoked(e.target.checked);
+              setPage(1);
+            }}
+          />
+          Hide revoked
+        </label>
+        <div className="notifications-count">
+          Showing {filteredNotifications.length} request(s)
+        </div>
+      </div>
 
       {error && <div className="notifications-error">{error}</div>}
       {inboxUrl && (
@@ -325,11 +358,11 @@ const Notifications = ({ webId }) => {
 
       {loading ? (
         <div className="notifications-empty">Loading notifications...</div>
-      ) : notifications.length === 0 ? (
+      ) : filteredNotifications.length === 0 ? (
         <div className="notifications-empty">No access requests found.</div>
       ) : (
         <div className="notifications-list">
-          {notifications.map((item) => (
+          {pagedNotifications.map((item) => (
             <div className="notification-card" key={item.id}>
               <div className="notification-head">
                 <div>
@@ -447,6 +480,27 @@ const Notifications = ({ webId }) => {
               )}
             </div>
           ))}
+        </div>
+      )}
+      {!loading && filteredNotifications.length > pageSize && (
+        <div className="notifications-pagination">
+          <button
+            className="pill-btn"
+            disabled={safePage <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+          >
+            Prev
+          </button>
+          <span className="notifications-page">
+            Page {safePage} of {totalPages}
+          </span>
+          <button
+            className="pill-btn"
+            disabled={safePage >= totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+          >
+            Next
+          </button>
         </div>
       )}
     </div>
