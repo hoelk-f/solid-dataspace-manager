@@ -8,6 +8,7 @@ import {
   getUrl,
   getUrlAll,
   getStringNoLocale,
+  deleteFile,
   saveSolidDatasetAt,
   setStringNoLocale,
   setUrl,
@@ -79,6 +80,7 @@ const Notifications = ({ webId }) => {
   const [processingId, setProcessingId] = useState("");
   const [hideRevoked, setHideRevoked] = useState(true);
   const [page, setPage] = useState(1);
+  const [clearingRevoked, setClearingRevoked] = useState(false);
   const pageSize = 5;
 
   const resolveInboxUrl = async () => {
@@ -301,6 +303,26 @@ const Notifications = ({ webId }) => {
     }
   };
 
+  const clearRevoked = async () => {
+    if (!notifications.length) return;
+    const revokedItems = notifications.filter((item) => item.status === "revoked");
+    if (!revokedItems.length) return;
+    if (!window.confirm(`Delete ${revokedItems.length} revoked request(s)?`)) return;
+
+    setClearingRevoked(true);
+    try {
+      await Promise.all(
+        revokedItems.map((item) => deleteFile(item.id, { fetch: noCacheFetch }))
+      );
+      await loadNotifications();
+    } catch (err) {
+      console.error("Failed to clear revoked requests:", err);
+      setError("Failed to clear revoked requests.");
+    } finally {
+      setClearingRevoked(false);
+    }
+  };
+
   useEffect(() => {
     if (!webId) return;
     loadNotifications();
@@ -347,6 +369,13 @@ const Notifications = ({ webId }) => {
         <div className="notifications-count">
           Showing {filteredNotifications.length} request(s)
         </div>
+        <button
+          className="pill-btn"
+          onClick={clearRevoked}
+          disabled={clearingRevoked || !notifications.some((item) => item.status === "revoked")}
+        >
+          {clearingRevoked ? "Clearing..." : "Clear revoked"}
+        </button>
       </div>
 
       {error && <div className="notifications-error">{error}</div>}
