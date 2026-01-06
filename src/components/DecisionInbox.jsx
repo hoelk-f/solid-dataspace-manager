@@ -18,6 +18,7 @@ const SDM_NS = "https://w3id.org/solid-dataspace-manager#";
 const SDM = {
   AccessDecision: `${SDM_NS}AccessDecision`,
   decision: `${SDM_NS}decision`,
+  decidedAt: `${SDM_NS}decidedAt`,
   requesterWebId: `${SDM_NS}requesterWebId`,
   datasetIdentifier: `${SDM_NS}datasetIdentifier`,
   datasetTitle: `${SDM_NS}datasetTitle`,
@@ -56,6 +57,9 @@ const DecisionInbox = ({ webId }) => {
   const [decisions, setDecisions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [hideRevoked, setHideRevoked] = useState(true);
+  const [page, setPage] = useState(1);
+  const pageSize = 5;
 
   const resolveInboxUrl = async () => {
     const profileDataset = await getSolidDataset(webId, { fetch: noCacheFetch });
@@ -77,6 +81,7 @@ const DecisionInbox = ({ webId }) => {
     return {
       id: url,
       decision: getStringNoLocale(thing, SDM.decision) || "",
+      decidedAt: getStringNoLocale(thing, SDM.decidedAt) || "",
       requesterWebId: getUrl(thing, SDM.requesterWebId) || "",
       datasetIdentifier: getStringNoLocale(thing, SDM.datasetIdentifier) || "",
       datasetTitle:
@@ -140,6 +145,20 @@ const DecisionInbox = ({ webId }) => {
     loadDecisions();
   }, [webId]);
 
+  const filteredDecisions = decisions.filter((item) =>
+    hideRevoked ? item.decision !== "revoked" : true
+  );
+  const totalPages = Math.max(1, Math.ceil(filteredDecisions.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pagedDecisions = filteredDecisions.slice(
+    (safePage - 1) * pageSize,
+    safePage * pageSize
+  );
+
+  useEffect(() => {
+    if (page !== safePage) setPage(safePage);
+  }, [page, safePage]);
+
   return (
     <div className="notifications">
       <div className="notifications-header">
@@ -152,6 +171,22 @@ const DecisionInbox = ({ webId }) => {
           <span>Refresh</span>
         </button>
       </div>
+      <div className="notifications-filters">
+        <label className="notifications-toggle">
+          <input
+            type="checkbox"
+            checked={hideRevoked}
+            onChange={(e) => {
+              setHideRevoked(e.target.checked);
+              setPage(1);
+            }}
+          />
+          Hide revoked
+        </label>
+        <div className="notifications-count">
+          Showing {filteredDecisions.length} decision(s)
+        </div>
+      </div>
 
       {error && <div className="notifications-error">{error}</div>}
       {inboxUrl && (
@@ -162,11 +197,11 @@ const DecisionInbox = ({ webId }) => {
 
       {loading ? (
         <div className="notifications-empty">Loading decisions...</div>
-      ) : decisions.length === 0 ? (
+      ) : filteredDecisions.length === 0 ? (
         <div className="notifications-empty">No access decisions found.</div>
       ) : (
         <div className="notifications-list">
-          {decisions.map((item) => (
+          {pagedDecisions.map((item) => (
             <div className="notification-card" key={item.id}>
               <div className="notification-head">
                 <div>
@@ -183,7 +218,10 @@ const DecisionInbox = ({ webId }) => {
               </div>
 
               <div className="notification-meta">
-                <div><strong>Decided:</strong> {formatDateTime(item.createdAt)}</div>
+                <div>
+                  <strong>Decided:</strong>{" "}
+                  {formatDateTime(item.decidedAt || item.createdAt)}
+                </div>
                 <div className="notification-webid">
                   <strong>Requester:</strong> {item.requesterWebId || "N/A"}
                 </div>
@@ -215,6 +253,27 @@ const DecisionInbox = ({ webId }) => {
               </div>
             </div>
           ))}
+        </div>
+      )}
+      {!loading && filteredDecisions.length > pageSize && (
+        <div className="notifications-pagination">
+          <button
+            className="pill-btn"
+            disabled={safePage <= 1}
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+          >
+            Prev
+          </button>
+          <span className="notifications-page">
+            Page {safePage} of {totalPages}
+          </span>
+          <button
+            className="pill-btn"
+            disabled={safePage >= totalPages}
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+          >
+            Next
+          </button>
         </div>
       )}
     </div>

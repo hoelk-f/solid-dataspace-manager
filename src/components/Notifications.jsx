@@ -115,6 +115,7 @@ const Notifications = ({ webId }) => {
       `  dct:created "${decidedAt}"^^xsd:dateTime;`,
       `  sdm:decision "${escapeLiteral(decision)}";`,
       `  sdm:requesterWebId <${item.requesterWebId}>;`,
+      `  sdm:decidedAt "${decidedAt}"^^xsd:dateTime;`,
       `  sdm:datasetIdentifier "${escapeLiteral(item.datasetIdentifier || "")}";`,
       `  sdm:datasetTitle "${escapeLiteral(item.datasetTitle || "")}";`,
       `  dct:title "${escapeLiteral(item.datasetTitle || "")}";`,
