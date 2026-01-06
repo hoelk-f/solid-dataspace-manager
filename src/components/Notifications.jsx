@@ -274,8 +274,9 @@ const Notifications = ({ webId }) => {
       });
 
       if (decision === "approved") {
-        await setAccessForResource(item.datasetAccessUrl, item.requesterWebId, { read: true });
-        await setAccessForResource(item.datasetSemanticModelUrl, item.requesterWebId, { read: true });
+        const fullAccess = { read: true, append: true, write: true, control: true };
+        await setAccessForResource(item.datasetAccessUrl, item.requesterWebId, fullAccess);
+        await setAccessForResource(item.datasetSemanticModelUrl, item.requesterWebId, fullAccess);
       } else if (decision === "revoked") {
         await setAccessForResource(item.datasetAccessUrl, item.requesterWebId, {});
         await setAccessForResource(item.datasetSemanticModelUrl, item.requesterWebId, {});
