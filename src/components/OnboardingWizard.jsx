@@ -405,8 +405,22 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
                 ) : (
                   <div className="onboarding-avatar__placeholder">No photo</div>
                 )}
-                <label className="onboarding-avatar__btn">
-                  {photoUploading ? "Uploading..." : "Upload photo (optional)"}
+                <label
+                  className="onboarding-avatar__btn"
+                  aria-label="Upload profile photo"
+                  title="Upload profile photo (optional)"
+                >
+                  <svg
+                    className="onboarding-avatar__icon"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fill="currentColor"
+                      d="M9 4h6l1.2 2H20a2 2 0 0 1 2 2v9a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V8a2 2 0 0 1 2-2h3.8L9 4Zm3 5a5 5 0 1 0 0 10a5 5 0 0 0 0-10Zm0 2a3 3 0 1 1 0 6a3 3 0 0 1 0-6Z"
+                    />
+                  </svg>
+                  {photoUploading ? "Uploading..." : ""}
                   <input type="file" accept="image/*" hidden onChange={onPickAvatar} />
                 </label>
               </div>

@@ -132,11 +132,19 @@
   border: 1px solid #c5dbff;
   background: #eaf2ff;
   color: #1d4ed8;
-  padding: 8px 12px;
-  border-radius: 10px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 999px;
   font-weight: 700;
   cursor: pointer;
-  width: fit-content;
+  display: grid;
+  place-items: center;
+}
+
+.onboarding-avatar__icon {
+  width: 20px;
+  height: 20px;
 }
 
 .onboarding-grid label,
