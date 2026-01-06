@@ -21,12 +21,32 @@ import {
   createAclFromFallbackAcl,
   setPublicResourceAccess,
   saveAclFor,
+  overwriteFile,
 } from "@inrupt/solid-client";
 import { FOAF, VCARD, LDP } from "@inrupt/vocab-common-rdf";
 import session from "../solidSession";
 import "./OnboardingWizard.css";
 
 const VCARD_TYPE = "http://www.w3.org/2006/vcard/ns#type";
+
+const guessContentType = (filename, fallback = "application/octet-stream") => {
+  const ext = filename.split(".").pop()?.toLowerCase();
+  switch (ext) {
+    case "png":
+      return "image/png";
+    case "jpg":
+    case "jpeg":
+      return "image/jpeg";
+    case "gif":
+      return "image/gif";
+    case "webp":
+      return "image/webp";
+    case "svg":
+      return "image/svg+xml";
+    default:
+      return fallback;
+  }
+};
 
 const getProfileDocUrl = (webId) => (webId ? webId.split("#")[0] : "");
 
@@ -59,6 +79,10 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
   const [role, setRole] = useState("");
   const [emails, setEmails] = useState([""]);
   const [inboxUrl, setInboxUrl] = useState("");
+  const [photoIri, setPhotoIri] = useState("");
+  const [photoSrc, setPhotoSrc] = useState("");
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [inboxAcknowledged, setInboxAcknowledged] = useState(false);
 
   const steps = useMemo(
     () => [
@@ -114,6 +138,8 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
 
       const inbox = getUrl(me, LDP.inbox) || "";
       setInboxUrl(inbox);
+      const photo = getUrl(me, VCARD.hasPhoto) || getUrl(me, FOAF.img) || "";
+      setPhotoIri(photo);
 
       const missingBasics = !(nm && org && role);
       const missingEmail = allEmails.length === 0;
@@ -139,6 +165,73 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
     loadProfile();
   }, [webId]);
 
+  useEffect(() => {
+    let revoked = false;
+    let objectUrl = "";
+    (async () => {
+      try {
+        if (!photoIri) {
+          setPhotoSrc("");
+          return;
+        }
+        const res = await session.fetch(photoIri);
+        if (!res.ok) throw new Error(`Avatar ${res.status}`);
+        const blob = await res.blob();
+        objectUrl = URL.createObjectURL(blob);
+        if (!revoked) setPhotoSrc(objectUrl);
+      } catch {
+        setPhotoSrc("");
+      }
+    })();
+    return () => {
+      revoked = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [photoIri]);
+
+  const uploadAvatar = async (file) => {
+    const podRoot = getPodRoot(webId);
+
+    const ensureContainer = async (containerUrl) => {
+      try {
+        await getSolidDataset(containerUrl, { fetch: session.fetch });
+      } catch (e) {
+        if (e?.statusCode === 404 || e?.response?.status === 404) {
+          await createContainerAt(containerUrl, { fetch: session.fetch });
+        } else {
+          throw e;
+        }
+      }
+    };
+
+    const profileUrl = `${podRoot}profile/`;
+    await ensureContainer(profileUrl);
+
+    const ext = file.name.split(".").pop()?.toLowerCase() || "png";
+    const targetUrl = `${profileUrl}avatar-${Date.now()}.${ext}`;
+    await overwriteFile(targetUrl, file, {
+      contentType: file.type || guessContentType(file.name, "image/*"),
+      fetch: session.fetch,
+    });
+    return targetUrl;
+  };
+
+  const onPickAvatar = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoUploading(true);
+    setError("");
+    try {
+      const url = await uploadAvatar(file);
+      setPhotoIri(url);
+    } catch (err) {
+      console.error("Avatar upload failed:", err);
+      setError("Avatar upload failed. Please try again.");
+    } finally {
+      setPhotoUploading(false);
+    }
+  };
+
   const saveBasics = async () => {
     if (!dataset || !profileDocUrl) return;
     let me = profileThing || createThing({ url: webId });
@@ -148,6 +241,10 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
     me = setStringNoLocale(me, VCARD.fn, name.trim());
     me = setStringNoLocale(me, VCARD.organization_name, org.trim());
     me = setStringNoLocale(me, VCARD.role, role.trim());
+    me = removeAll(me, VCARD.hasPhoto);
+    if (photoIri) {
+      me = setUrl(me, VCARD.hasPhoto, photoIri);
+    }
 
     const updated = setThing(dataset, me);
     await saveSolidDatasetAt(profileDocUrl, updated, { fetch: session.fetch });
@@ -301,30 +398,43 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
           <div className="onboarding-section">
             <h3>Basics</h3>
             <p>Please provide your profile basics.</p>
-            <div className="onboarding-grid">
-              <div>
-                <label>Name</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
+            <div className="onboarding-basics">
+              <div className="onboarding-avatar">
+                {photoSrc ? (
+                  <img src={photoSrc} alt="Profile avatar" />
+                ) : (
+                  <div className="onboarding-avatar__placeholder">No photo</div>
+                )}
+                <label className="onboarding-avatar__btn">
+                  {photoUploading ? "Uploading..." : "Upload photo (optional)"}
+                  <input type="file" accept="image/*" hidden onChange={onPickAvatar} />
+                </label>
               </div>
-              <div>
-                <label>Organization</label>
-                <input
-                  type="text"
-                  value={org}
-                  onChange={(e) => setOrg(e.target.value)}
-                />
-              </div>
-              <div>
-                <label>Role</label>
-                <input
-                  type="text"
-                  value={role}
-                  onChange={(e) => setRole(e.target.value)}
-                />
+              <div className="onboarding-grid">
+                <div>
+                  <label>Name</label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label>Organization</label>
+                  <input
+                    type="text"
+                    value={org}
+                    onChange={(e) => setOrg(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label>Role</label>
+                  <input
+                    type="text"
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -382,8 +492,17 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
                 {inboxUrl || "Not configured"}
               </div>
               <div className="onboarding-inbox__hint">
-                We will create an inbox at your pod root if needed.
+                On finish, we will create an inbox container in your pod root (if needed)
+                and set the permissions required for notifications.
               </div>
+              <label className="onboarding-checkbox">
+                <input
+                  type="checkbox"
+                  checked={inboxAcknowledged}
+                  onChange={(e) => setInboxAcknowledged(e.target.checked)}
+                />
+                <span>I understand that finishing will create and configure my inbox.</span>
+              </label>
             </div>
           </div>
         )}
@@ -404,7 +523,8 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
             disabled={
               saving ||
               (step === 1 && !basicsComplete) ||
-              (step === 2 && !emailsComplete)
+              (step === 2 && !emailsComplete) ||
+              (step === 3 && !inboxAcknowledged)
             }
           >
             {saving ? "Saving..." : step === 3 ? "Finish" : "Next"}

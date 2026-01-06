@@ -102,6 +102,43 @@
   gap: 16px;
 }
 
+.onboarding-basics {
+  display: grid;
+  gap: 20px;
+}
+
+.onboarding-avatar {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+}
+
+.onboarding-avatar img,
+.onboarding-avatar__placeholder {
+  width: 96px;
+  height: 96px;
+  border-radius: 18px;
+  object-fit: cover;
+  border: 2px solid #e2e8f0;
+  background: #f1f5f9;
+  display: grid;
+  place-items: center;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.onboarding-avatar__btn {
+  border: 1px solid #c5dbff;
+  background: #eaf2ff;
+  color: #1d4ed8;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  width: fit-content;
+}
+
 .onboarding-grid label,
 .onboarding-list label {
   font-size: 13px;
@@ -184,6 +221,20 @@
   font-size: 13px;
 }
 
+.onboarding-checkbox {
+  margin-top: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.onboarding-checkbox input {
+  margin-top: 2px;
+}
+
 .onboarding-actions {
   display: flex;
   justify-content: space-between;
@@ -226,5 +277,10 @@
 @media (min-width: 760px) {
   .onboarding-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .onboarding-basics {
+    grid-template-columns: 150px minmax(0, 1fr);
+    align-items: start;
   }
 }
