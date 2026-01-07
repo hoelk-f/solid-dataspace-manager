@@ -7,7 +7,10 @@ import {
   faHexagonNodes,
   faDatabase,
   faTemperatureHigh,
-  faCircleInfo
+  faCircleInfo,
+  faBell,
+  faInbox,
+  faUserGear
 } from "@fortawesome/free-solid-svg-icons";
 
 function Info() {
@@ -30,12 +33,43 @@ function Info() {
 
       <div className="info-section">
         <h2>
-          <FontAwesomeIcon icon={faTableColumns} /> Data Manager &amp; Profile Manager
+          <FontAwesomeIcon icon={faTableColumns} /> Data Manager
         </h2>
         <p>
-          The Data Manager lets you browse and control the files in your Solid Pod, while the Profile
-          Manager helps you edit your WebID profile. Together they provide core tools for managing your
-          presence in the dataspace.
+          The Data Manager lets you browse and control the files in your Solid Pod. You can upload,
+          download, share, and revoke access to resources directly from your pod storage.
+        </p>
+      </div>
+
+      <div className="info-section">
+        <h2>
+          <FontAwesomeIcon icon={faUserGear} /> Profile Manager
+        </h2>
+        <p>
+          The Profile Manager helps you maintain your WebID profile with your name, organization,
+          role, email, and profile photo. It also provides tools to configure your Solid inbox so
+          access requests and decisions can be delivered to you.
+        </p>
+      </div>
+
+      <div className="info-section">
+        <h2>
+          <FontAwesomeIcon icon={faBell} /> Access Requests
+        </h2>
+        <p>
+          Incoming access requests from the Semantic Data Catalog arrive as notifications. You can
+          review requester details, approve or deny access, set optional expirations, and leave a
+          comment for the requester.
+        </p>
+      </div>
+
+      <div className="info-section">
+        <h2>
+          <FontAwesomeIcon icon={faInbox} /> Access Decisions
+        </h2>
+        <p>
+          When someone grants or revokes access to your requests, the decision is delivered to your
+          inbox and shown here. This keeps the status of your requests in one place.
         </p>
       </div>
 
@@ -90,9 +124,8 @@ function Info() {
         <p>
           Data flows into Solid Pods via tools like Node-RED or manual uploads through the Data Manager.
           PLASMA adds semantic annotations before datasets are published in the Semantic Data Catalog.
-          People manage their Pods through the Data Manager and Profile Manager, while applications such
-          as Urban Heat Monitoring reuse the catalogued resources. Together these components form the
-          Solid Dataspace Manager.
+          Access requests are handled in the Manager, while decisions are delivered back to requesters
+          through inbox notifications. Together these components form the Solid Dataspace.
         </p>
       </div>
     </div>
