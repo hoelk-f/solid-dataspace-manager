@@ -82,6 +82,9 @@ const DecisionInbox = ({ webId }) => {
     const types = getUrlAll(thing, RDF.type);
     if (!types.includes(SDM.AccessDecision)) return null;
 
+    const timestampMatch = url.match(/(\d{10,})(?:\/)?$/);
+    const urlTime = timestampMatch ? Number(timestampMatch[1]) : 0;
+
     return {
       id: url,
       decision: getStringNoLocale(thing, SDM.decision) || "",
@@ -98,6 +101,7 @@ const DecisionInbox = ({ webId }) => {
       decisionComment: getStringNoLocale(thing, SDM.decisionComment) || "",
       expiresAt: getStringNoLocale(thing, SDM.expiresAt) || "",
       createdAt: getStringNoLocale(thing, DCT_CREATED) || "",
+      urlTime,
     };
   };
 
@@ -110,6 +114,9 @@ const DecisionInbox = ({ webId }) => {
     ];
     return parts.join("|");
   };
+
+  const getDecisionTime = (item) =>
+    Date.parse(item.decidedAt || item.createdAt) || item.urlTime || 0;
 
   const loadDecisions = async () => {
     setLoading(true);
@@ -139,11 +146,7 @@ const DecisionInbox = ({ webId }) => {
       );
 
       const filtered = rawItems.filter(Boolean);
-      filtered.sort((a, b) => {
-        const aTime = Date.parse(a.decidedAt || a.createdAt) || 0;
-        const bTime = Date.parse(b.decidedAt || b.createdAt) || 0;
-        return bTime - aTime;
-      });
+      filtered.sort((a, b) => getDecisionTime(b) - getDecisionTime(a));
 
       const latestByKey = new Map();
       filtered.forEach((item) => {
@@ -153,8 +156,8 @@ const DecisionInbox = ({ webId }) => {
           return;
         }
         const existing = latestByKey.get(key);
-        const existingTime = Date.parse(existing.decidedAt || existing.createdAt) || 0;
-        const itemTime = Date.parse(item.decidedAt || item.createdAt) || 0;
+        const existingTime = getDecisionTime(existing);
+        const itemTime = getDecisionTime(item);
         if (itemTime >= existingTime) {
           latestByKey.set(key, item);
         }
