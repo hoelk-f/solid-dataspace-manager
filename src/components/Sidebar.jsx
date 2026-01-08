@@ -32,6 +32,8 @@ const SDM_NS = "https://w3id.org/solid-dataspace-manager#";
 const SDM = {
   AccessRequest: `${SDM_NS}AccessRequest`,
   AccessDecision: `${SDM_NS}AccessDecision`,
+  status: `${SDM_NS}status`,
+  decidedAt: `${SDM_NS}decidedAt`,
 };
 const DCT_CREATED = "http://purl.org/dc/terms/created";
 const LAST_SEEN_REQUESTS_KEY = "sdm-last-seen-requests";
@@ -74,9 +76,6 @@ function Sidebar({ webId }) {
           return;
         }
 
-        const lastSeenRequests = Date.parse(
-          localStorage.getItem(LAST_SEEN_REQUESTS_KEY) || ""
-        ) || 0;
         const lastSeenDecisions = Date.parse(
           localStorage.getItem(LAST_SEEN_DECISIONS_KEY) || ""
         ) || 0;
@@ -94,14 +93,18 @@ function Sidebar({ webId }) {
               const thing = getThing(dataset, url) || getThingAll(dataset)[0];
               if (!thing) return;
               const types = parseTypes(thing);
-              const createdAt = getStringNoLocale(thing, DCT_CREATED) || "";
-              const createdTime = Date.parse(createdAt) || 0;
-
-              if (types.includes(SDM.AccessRequest) && createdTime > lastSeenRequests) {
-                requestCount += 1;
+              if (types.includes(SDM.AccessRequest)) {
+                const status = getStringNoLocale(thing, SDM.status) || "";
+                if (status === "pending") requestCount += 1;
               }
-              if (types.includes(SDM.AccessDecision) && createdTime > lastSeenDecisions) {
-                decisionCount += 1;
+
+              if (types.includes(SDM.AccessDecision)) {
+                const decidedAt = getStringNoLocale(thing, SDM.decidedAt) || "";
+                const createdAt = getStringNoLocale(thing, DCT_CREATED) || "";
+                const decisionTime = Date.parse(decidedAt || createdAt) || 0;
+                if (decisionTime > lastSeenDecisions) {
+                  decisionCount += 1;
+                }
               }
             } catch {
               // Ignore malformed inbox items.
