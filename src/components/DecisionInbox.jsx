@@ -32,6 +32,7 @@ const SDM = {
 
 const DCT_CREATED = "http://purl.org/dc/terms/created";
 const DCT_TITLE = "http://purl.org/dc/terms/title";
+const LAST_SEEN_DECISIONS_KEY = "sdm-last-seen-decisions";
 
 const noCacheFetch = (input, init = {}) =>
   session.fetch(input, {
@@ -134,6 +135,10 @@ const DecisionInbox = ({ webId }) => {
       });
 
       setDecisions(filtered);
+      const newest = filtered.find((item) => Date.parse(item.createdAt));
+      if (newest?.createdAt) {
+        localStorage.setItem(LAST_SEEN_DECISIONS_KEY, newest.createdAt);
+      }
     } catch (err) {
       console.error("Failed to load decisions:", err);
       setError("Failed to load access decisions.");
