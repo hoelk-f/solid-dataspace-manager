@@ -101,6 +101,16 @@ const DecisionInbox = ({ webId }) => {
     };
   };
 
+  const buildDecisionKey = (item) => {
+    const parts = [
+      item.requesterWebId || "",
+      item.datasetIdentifier || "",
+      item.datasetAccessUrl || "",
+      item.datasetSemanticModelUrl || "",
+    ];
+    return parts.join("|");
+  };
+
   const loadDecisions = async () => {
     setLoading(true);
     setError("");
@@ -130,12 +140,27 @@ const DecisionInbox = ({ webId }) => {
 
       const filtered = rawItems.filter(Boolean);
       filtered.sort((a, b) => {
-        const aTime = Date.parse(a.createdAt) || 0;
-        const bTime = Date.parse(b.createdAt) || 0;
+        const aTime = Date.parse(a.decidedAt || a.createdAt) || 0;
+        const bTime = Date.parse(b.decidedAt || b.createdAt) || 0;
         return bTime - aTime;
       });
 
-      setDecisions(filtered);
+      const latestByKey = new Map();
+      filtered.forEach((item) => {
+        const key = buildDecisionKey(item);
+        if (!latestByKey.has(key)) {
+          latestByKey.set(key, item);
+          return;
+        }
+        const existing = latestByKey.get(key);
+        const existingTime = Date.parse(existing.decidedAt || existing.createdAt) || 0;
+        const itemTime = Date.parse(item.decidedAt || item.createdAt) || 0;
+        if (itemTime >= existingTime) {
+          latestByKey.set(key, item);
+        }
+      });
+
+      setDecisions(Array.from(latestByKey.values()));
       localStorage.setItem(LAST_SEEN_DECISIONS_KEY, new Date().toISOString());
     } catch (err) {
       console.error("Failed to load decisions:", err);
