@@ -396,14 +396,16 @@ const Notifications = ({ webId }) => {
 
   const clearRevoked = async () => {
     if (!notifications.length) return;
-    const revokedItems = notifications.filter((item) => item.status === "revoked");
-    if (!revokedItems.length) return;
-    if (!window.confirm(`Delete ${revokedItems.length} revoked request(s)?`)) return;
+    const closedItems = notifications.filter(
+      (item) => item.status === "revoked" || item.status === "denied"
+    );
+    if (!closedItems.length) return;
+    if (!window.confirm(`Delete ${closedItems.length} closed request(s)?`)) return;
 
     setClearingRevoked(true);
     try {
       await Promise.all(
-        revokedItems.map((item) => deleteFile(item.id, { fetch: noCacheFetch }))
+        closedItems.map((item) => deleteFile(item.id, { fetch: noCacheFetch }))
       );
       await loadNotifications();
     } catch (err) {
@@ -463,9 +465,14 @@ const Notifications = ({ webId }) => {
         <button
           className="pill-btn"
           onClick={clearRevoked}
-          disabled={clearingRevoked || !notifications.some((item) => item.status === "revoked")}
+          disabled={
+            clearingRevoked ||
+            !notifications.some(
+              (item) => item.status === "revoked" || item.status === "denied"
+            )
+          }
         >
-          {clearingRevoked ? "Clearing..." : "Clear revoked"}
+          {clearingRevoked ? "Clearing..." : "Clear closed"}
         </button>
       </div>
 

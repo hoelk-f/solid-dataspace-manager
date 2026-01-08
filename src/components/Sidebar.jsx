@@ -79,6 +79,7 @@ function Sidebar({ webId }) {
         const lastSeenDecisions = Date.parse(
           localStorage.getItem(LAST_SEEN_DECISIONS_KEY) || ""
         ) || 0;
+        const hasSeenDecisions = Boolean(lastSeenDecisions);
 
         const inboxDataset = await getSolidDataset(inbox, { fetch: noCacheFetch });
         const resourceUrls = getContainedResourceUrlAll(inboxDataset);
@@ -102,7 +103,9 @@ function Sidebar({ webId }) {
                 const decidedAt = getStringNoLocale(thing, SDM.decidedAt) || "";
                 const createdAt = getStringNoLocale(thing, DCT_CREATED) || "";
                 const decisionTime = Date.parse(decidedAt || createdAt) || 0;
-                if (decisionTime > lastSeenDecisions) {
+                if (!hasSeenDecisions) {
+                  decisionCount += 1;
+                } else if (decisionTime > lastSeenDecisions) {
                   decisionCount += 1;
                 }
               }
