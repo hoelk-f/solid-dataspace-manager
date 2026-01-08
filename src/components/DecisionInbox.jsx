@@ -62,6 +62,7 @@ const DecisionInbox = ({ webId }) => {
   const [hideRevoked, setHideRevoked] = useState(true);
   const [page, setPage] = useState(1);
   const [clearingRevoked, setClearingRevoked] = useState(false);
+  const [clearingApproved, setClearingApproved] = useState(false);
   const pageSize = 5;
 
   const resolveInboxUrl = async () => {
@@ -166,6 +167,26 @@ const DecisionInbox = ({ webId }) => {
     }
   };
 
+  const clearApproved = async () => {
+    if (!decisions.length) return;
+    const approvedItems = decisions.filter((item) => item.decision === "approved");
+    if (!approvedItems.length) return;
+    if (!window.confirm(`Delete ${approvedItems.length} approved decision(s)?`)) return;
+
+    setClearingApproved(true);
+    try {
+      await Promise.all(
+        approvedItems.map((item) => deleteFile(item.id, { fetch: noCacheFetch }))
+      );
+      await loadDecisions();
+    } catch (err) {
+      console.error("Failed to clear approved decisions:", err);
+      setError("Failed to clear approved decisions.");
+    } finally {
+      setClearingApproved(false);
+    }
+  };
+
   useEffect(() => {
     if (!webId) return;
     loadDecisions();
@@ -223,6 +244,13 @@ const DecisionInbox = ({ webId }) => {
           }
         >
           {clearingRevoked ? "Clearing..." : "Clear closed"}
+        </button>
+        <button
+          className="pill-btn"
+          onClick={clearApproved}
+          disabled={clearingApproved || !decisions.some((item) => item.decision === "approved")}
+        >
+          {clearingApproved ? "Clearing..." : "Clear approved"}
         </button>
       </div>
 
