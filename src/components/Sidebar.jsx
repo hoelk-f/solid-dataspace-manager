@@ -44,7 +44,7 @@ const noCacheFetch = (input, init = {}) =>
     headers: { ...(init.headers || {}), "Cache-Control": "no-cache" },
   });
 
-function Sidebar() {
+function Sidebar({ webId }) {
   const { pathname } = useLocation();
   const isActive = (to) => pathname === to;
   const [unreadRequests, setUnreadRequests] = useState(0);
@@ -121,19 +121,15 @@ function Sidebar() {
       }
     };
 
-    const startPolling = () => {
-      if (!session.info.isLoggedIn || !session.info.webId) return;
-      countUnread();
-      timer = setInterval(countUnread, 15000);
-    };
-
-    startPolling();
+    if (!webId) return undefined;
+    countUnread();
+    timer = setInterval(countUnread, 15000);
 
     return () => {
       cancelled = true;
       if (timer) clearInterval(timer);
     };
-  }, []);
+  }, [webId]);
 
   const handleLogout = async () => {
     try {

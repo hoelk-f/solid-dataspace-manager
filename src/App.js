@@ -131,7 +131,7 @@ const App = () => {
   return (
     <BrowserRouter>
       <div className="layout">
-        <Sidebar />
+        <Sidebar webId={webId} />
         <div className="main">
           <div className="container">
             <Routes>
