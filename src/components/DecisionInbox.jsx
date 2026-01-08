@@ -135,10 +135,7 @@ const DecisionInbox = ({ webId }) => {
       });
 
       setDecisions(filtered);
-      const newest = filtered.find((item) => Date.parse(item.createdAt));
-      if (newest?.createdAt) {
-        localStorage.setItem(LAST_SEEN_DECISIONS_KEY, newest.createdAt);
-      }
+      localStorage.setItem(LAST_SEEN_DECISIONS_KEY, new Date().toISOString());
     } catch (err) {
       console.error("Failed to load decisions:", err);
       setError("Failed to load access decisions.");
@@ -147,16 +144,18 @@ const DecisionInbox = ({ webId }) => {
     }
   };
 
-  const clearRevoked = async () => {
+  const clearClosed = async () => {
     if (!decisions.length) return;
-    const revokedItems = decisions.filter((item) => item.decision === "revoked");
-    if (!revokedItems.length) return;
-    if (!window.confirm(`Delete ${revokedItems.length} revoked decision(s)?`)) return;
+    const closedItems = decisions.filter(
+      (item) => item.decision === "revoked" || item.decision === "denied"
+    );
+    if (!closedItems.length) return;
+    if (!window.confirm(`Delete ${closedItems.length} closed decision(s)?`)) return;
 
     setClearingRevoked(true);
     try {
       await Promise.all(
-        revokedItems.map((item) => deleteFile(item.id, { fetch: noCacheFetch }))
+        closedItems.map((item) => deleteFile(item.id, { fetch: noCacheFetch }))
       );
       await loadDecisions();
     } catch (err) {
@@ -215,10 +214,15 @@ const DecisionInbox = ({ webId }) => {
         </div>
         <button
           className="pill-btn"
-          onClick={clearRevoked}
-          disabled={clearingRevoked || !decisions.some((item) => item.decision === "revoked")}
+          onClick={clearClosed}
+          disabled={
+            clearingRevoked ||
+            !decisions.some(
+              (item) => item.decision === "revoked" || item.decision === "denied"
+            )
+          }
         >
-          {clearingRevoked ? "Clearing..." : "Clear revoked"}
+          {clearingRevoked ? "Clearing..." : "Clear closed"}
         </button>
       </div>
 
