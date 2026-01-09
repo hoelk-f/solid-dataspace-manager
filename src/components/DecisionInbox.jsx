@@ -59,7 +59,7 @@ const DecisionInbox = ({ webId }) => {
   const [decisions, setDecisions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [hideRevoked, setHideRevoked] = useState(true);
+  const [hideClosed, setHideClosed] = useState(true);
   const [page, setPage] = useState(1);
   const [clearingRevoked, setClearingRevoked] = useState(false);
   const [clearingApproved, setClearingApproved] = useState(false);
@@ -221,7 +221,7 @@ const DecisionInbox = ({ webId }) => {
   }, [webId]);
 
   const filteredDecisions = decisions.filter((item) =>
-    hideRevoked ? item.decision !== "revoked" : true
+    hideClosed ? item.decision !== "revoked" && item.decision !== "denied" : true
   );
   const totalPages = Math.max(1, Math.ceil(filteredDecisions.length / pageSize));
   const safePage = Math.min(page, totalPages);
@@ -250,13 +250,13 @@ const DecisionInbox = ({ webId }) => {
         <label className="notifications-toggle">
           <input
             type="checkbox"
-            checked={hideRevoked}
+            checked={hideClosed}
             onChange={(e) => {
-              setHideRevoked(e.target.checked);
+              setHideClosed(e.target.checked);
               setPage(1);
             }}
           />
-          Hide revoked
+          Hide closed
         </label>
         <div className="notifications-count">
           Showing {filteredDecisions.length} decision(s)
@@ -307,7 +307,9 @@ const DecisionInbox = ({ webId }) => {
                   </div>
                 </div>
                 <span className={`status-pill status-${item.decision || "pending"}`}>
-                  {item.decision || "unknown"}
+                  {item.decision === "revoked" || item.decision === "denied"
+                    ? "closed"
+                    : item.decision || "unknown"}
                 </span>
               </div>
 

@@ -87,7 +87,7 @@ const Notifications = ({ webId }) => {
   const [decisionNotes, setDecisionNotes] = useState({});
   const [decisionExpiry, setDecisionExpiry] = useState({});
   const [processingId, setProcessingId] = useState("");
-  const [hideRevoked, setHideRevoked] = useState(true);
+  const [hideClosed, setHideClosed] = useState(true);
   const [page, setPage] = useState(1);
   const [clearingRevoked, setClearingRevoked] = useState(false);
   const pageSize = 5;
@@ -394,7 +394,7 @@ const Notifications = ({ webId }) => {
     }
   };
 
-  const clearRevoked = async () => {
+  const clearClosed = async () => {
     if (!notifications.length) return;
     const closedItems = notifications.filter(
       (item) => item.status === "revoked" || item.status === "denied"
@@ -409,8 +409,8 @@ const Notifications = ({ webId }) => {
       );
       await loadNotifications();
     } catch (err) {
-      console.error("Failed to clear revoked requests:", err);
-      setError("Failed to clear revoked requests.");
+      console.error("Failed to clear closed requests:", err);
+      setError("Failed to clear closed requests.");
     } finally {
       setClearingRevoked(false);
     }
@@ -422,7 +422,7 @@ const Notifications = ({ webId }) => {
   }, [webId]);
 
   const filteredNotifications = notifications.filter((item) =>
-    hideRevoked ? item.status !== "revoked" : true
+    hideClosed ? item.status !== "revoked" && item.status !== "denied" : true
   );
   const totalPages = Math.max(1, Math.ceil(filteredNotifications.length / pageSize));
   const safePage = Math.min(page, totalPages);
@@ -451,20 +451,20 @@ const Notifications = ({ webId }) => {
         <label className="notifications-toggle">
           <input
             type="checkbox"
-            checked={hideRevoked}
+            checked={hideClosed}
             onChange={(e) => {
-              setHideRevoked(e.target.checked);
+              setHideClosed(e.target.checked);
               setPage(1);
             }}
           />
-          Hide revoked
+          Hide closed
         </label>
         <div className="notifications-count">
           Showing {filteredNotifications.length} request(s)
         </div>
         <button
           className="pill-btn"
-          onClick={clearRevoked}
+          onClick={clearClosed}
           disabled={
             clearingRevoked ||
             !notifications.some(
@@ -501,7 +501,7 @@ const Notifications = ({ webId }) => {
                   </div>
                 </div>
                 <span className={`status-pill status-${item.status}`}>
-                  {item.status}
+                  {item.status === "revoked" || item.status === "denied" ? "closed" : item.status}
                 </span>
               </div>
 
@@ -540,7 +540,10 @@ const Notifications = ({ webId }) => {
 
               {item.status !== "pending" && (
                 <div className="notification-decision">
-                  <div><strong>Decision:</strong> {item.status}</div>
+                  <div>
+                    <strong>Decision:</strong>{" "}
+                    {item.status === "revoked" || item.status === "denied" ? "closed" : item.status}
+                  </div>
                   <div><strong>Decided At:</strong> {formatDateTime(item.decidedAt)}</div>
                   <div><strong>Expires:</strong> {formatDateTime(item.expiresAt)}</div>
                   {item.decisionComment && (
@@ -572,9 +575,6 @@ const Notifications = ({ webId }) => {
                         }
                       />
                     </label>
-                    <div className="notification-note">
-                      Approve grants read access only.
-                    </div>
                   </div>
                   <div className="notification-buttons">
                     <button
