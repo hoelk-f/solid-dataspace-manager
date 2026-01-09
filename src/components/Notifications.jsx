@@ -26,6 +26,7 @@ import {
 import { LDP, RDF } from "@inrupt/vocab-common-rdf";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faInbox, faRotateRight, faCheck, faXmark } from "@fortawesome/free-solid-svg-icons";
+import ConfirmModal from "./ConfirmModal";
 import "./Notifications.css";
 
 const SDM_NS = "https://w3id.org/solid-dataspace-manager#";
@@ -90,6 +91,9 @@ const Notifications = ({ webId }) => {
   const [hideClosed, setHideClosed] = useState(true);
   const [page, setPage] = useState(1);
   const [clearingRevoked, setClearingRevoked] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmMessage, setConfirmMessage] = useState("");
+  const [confirmAction, setConfirmAction] = useState("");
   const pageSize = 5;
 
   const resolveInboxUrl = async () => {
@@ -400,7 +404,6 @@ const Notifications = ({ webId }) => {
       (item) => item.status === "revoked" || item.status === "denied"
     );
     if (!closedItems.length) return;
-    if (!window.confirm(`Delete ${closedItems.length} closed request(s)?`)) return;
 
     setClearingRevoked(true);
     try {
@@ -414,6 +417,24 @@ const Notifications = ({ webId }) => {
     } finally {
       setClearingRevoked(false);
     }
+  };
+
+  const openClearClosedConfirm = () => {
+    const closedItems = notifications.filter(
+      (item) => item.status === "revoked" || item.status === "denied"
+    );
+    if (!closedItems.length) return;
+    setConfirmMessage(`Delete ${closedItems.length} closed request(s)?`);
+    setConfirmAction("clearClosed");
+    setConfirmOpen(true);
+  };
+
+  const handleConfirm = async () => {
+    if (confirmAction === "clearClosed") {
+      await clearClosed();
+    }
+    setConfirmOpen(false);
+    setConfirmAction("");
   };
 
   useEffect(() => {
@@ -464,7 +485,7 @@ const Notifications = ({ webId }) => {
         </div>
         <button
           className="pill-btn"
-          onClick={clearClosed}
+          onClick={openClearClosedConfirm}
           disabled={
             clearingRevoked ||
             !notifications.some(
@@ -630,6 +651,14 @@ const Notifications = ({ webId }) => {
           </button>
         </div>
       )}
+      <ConfirmModal
+        show={confirmOpen}
+        title="Clear Closed Requests"
+        message={confirmMessage}
+        confirmLabel="Delete"
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleConfirm}
+      />
     </div>
   );
 };

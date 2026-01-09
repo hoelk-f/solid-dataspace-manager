@@ -13,6 +13,7 @@ import {
 import { LDP, RDF } from "@inrupt/vocab-common-rdf";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBell, faRotateRight } from "@fortawesome/free-solid-svg-icons";
+import ConfirmModal from "./ConfirmModal";
 import "./Notifications.css";
 
 const SDM_NS = "https://w3id.org/solid-dataspace-manager#";
@@ -63,6 +64,10 @@ const DecisionInbox = ({ webId }) => {
   const [page, setPage] = useState(1);
   const [clearingRevoked, setClearingRevoked] = useState(false);
   const [clearingApproved, setClearingApproved] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmMessage, setConfirmMessage] = useState("");
+  const [confirmTitle, setConfirmTitle] = useState("");
+  const [confirmAction, setConfirmAction] = useState("");
   const pageSize = 5;
 
   const resolveInboxUrl = async () => {
@@ -179,7 +184,6 @@ const DecisionInbox = ({ webId }) => {
       (item) => item.decision === "revoked" || item.decision === "denied"
     );
     if (!closedItems.length) return;
-    if (!window.confirm(`Delete ${closedItems.length} closed decision(s)?`)) return;
 
     setClearingRevoked(true);
     try {
@@ -199,7 +203,6 @@ const DecisionInbox = ({ webId }) => {
     if (!decisions.length) return;
     const approvedItems = decisions.filter((item) => item.decision === "approved");
     if (!approvedItems.length) return;
-    if (!window.confirm(`Delete ${approvedItems.length} approved decision(s)?`)) return;
 
     setClearingApproved(true);
     try {
@@ -213,6 +216,37 @@ const DecisionInbox = ({ webId }) => {
     } finally {
       setClearingApproved(false);
     }
+  };
+
+  const openClearClosedConfirm = () => {
+    const closedItems = decisions.filter(
+      (item) => item.decision === "revoked" || item.decision === "denied"
+    );
+    if (!closedItems.length) return;
+    setConfirmTitle("Clear Closed Decisions");
+    setConfirmMessage(`Delete ${closedItems.length} closed decision(s)?`);
+    setConfirmAction("clearClosed");
+    setConfirmOpen(true);
+  };
+
+  const openClearApprovedConfirm = () => {
+    const approvedItems = decisions.filter((item) => item.decision === "approved");
+    if (!approvedItems.length) return;
+    setConfirmTitle("Clear Approved Decisions");
+    setConfirmMessage(`Delete ${approvedItems.length} approved decision(s)?`);
+    setConfirmAction("clearApproved");
+    setConfirmOpen(true);
+  };
+
+  const handleConfirm = async () => {
+    if (confirmAction === "clearClosed") {
+      await clearClosed();
+    }
+    if (confirmAction === "clearApproved") {
+      await clearApproved();
+    }
+    setConfirmOpen(false);
+    setConfirmAction("");
   };
 
   useEffect(() => {
@@ -264,14 +298,14 @@ const DecisionInbox = ({ webId }) => {
         <div className="notifications-actions">
           <button
             className="pill-btn"
-            onClick={clearApproved}
+            onClick={openClearApprovedConfirm}
             disabled={clearingApproved || !decisions.some((item) => item.decision === "approved")}
           >
             {clearingApproved ? "Clearing..." : "Clear approved"}
           </button>
           <button
             className="pill-btn"
-            onClick={clearClosed}
+            onClick={openClearClosedConfirm}
             disabled={
               clearingRevoked ||
               !decisions.some(
@@ -374,6 +408,14 @@ const DecisionInbox = ({ webId }) => {
           </button>
         </div>
       )}
+      <ConfirmModal
+        show={confirmOpen}
+        title={confirmTitle}
+        message={confirmMessage}
+        confirmLabel="Delete"
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleConfirm}
+      />
     </div>
   );
 };
