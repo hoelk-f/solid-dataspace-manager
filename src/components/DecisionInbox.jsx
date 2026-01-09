@@ -261,25 +261,27 @@ const DecisionInbox = ({ webId }) => {
         <div className="notifications-count">
           Showing {filteredDecisions.length} decision(s)
         </div>
-        <button
-          className="pill-btn"
-          onClick={clearClosed}
-          disabled={
-            clearingRevoked ||
-            !decisions.some(
-              (item) => item.decision === "revoked" || item.decision === "denied"
-            )
-          }
-        >
-          {clearingRevoked ? "Clearing..." : "Clear closed"}
-        </button>
-        <button
-          className="pill-btn"
-          onClick={clearApproved}
-          disabled={clearingApproved || !decisions.some((item) => item.decision === "approved")}
-        >
-          {clearingApproved ? "Clearing..." : "Clear approved"}
-        </button>
+        <div className="notifications-actions">
+          <button
+            className="pill-btn"
+            onClick={clearApproved}
+            disabled={clearingApproved || !decisions.some((item) => item.decision === "approved")}
+          >
+            {clearingApproved ? "Clearing..." : "Clear approved"}
+          </button>
+          <button
+            className="pill-btn"
+            onClick={clearClosed}
+            disabled={
+              clearingRevoked ||
+              !decisions.some(
+                (item) => item.decision === "revoked" || item.decision === "denied"
+              )
+            }
+          >
+            {clearingRevoked ? "Clearing..." : "Clear closed"}
+          </button>
+        </div>
       </div>
 
       {error && <div className="notifications-error">{error}</div>}
