@@ -22,7 +22,7 @@ import {
   createAclFromFallbackAcl,
   getResourceAcl,
 } from "@inrupt/solid-client";
-import { DCAT, DCTERMS, FOAF, RDF, SOLID } from "@inrupt/vocab-common-rdf";
+import { DCAT, DCTERMS, FOAF, RDF } from "@inrupt/vocab-common-rdf";
 
 const CATALOG_CONTAINER = "dcat/";
 const DATASET_CONTAINER = "dcat/ds/";
@@ -30,6 +30,13 @@ const SERIES_CONTAINER = "dcat/series/";
 const RECORDS_CONTAINER = "dcat/records/";
 const REGISTRY_DOC = "dcat/registry.ttl";
 const CATALOG_DOC = "dcat/cat.ttl";
+const SOLID = {
+  publicTypeIndex: "http://www.w3.org/ns/solid/terms#publicTypeIndex",
+  TypeIndex: "http://www.w3.org/ns/solid/terms#TypeIndex",
+  TypeRegistration: "http://www.w3.org/ns/solid/terms#TypeRegistration",
+  forClass: "http://www.w3.org/ns/solid/terms#forClass",
+  instance: "http://www.w3.org/ns/solid/terms#instance",
+};
 
 export const getPodRoot = (webId) => {
   const url = new URL(webId);
