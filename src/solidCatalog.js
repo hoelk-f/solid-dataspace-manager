@@ -32,6 +32,8 @@ const SERIES_CONTAINER = "catalog/series/";
 const RECORDS_CONTAINER = "catalog/records/";
 const REGISTRY_DOC = "catalog/registry.ttl";
 const CATALOG_DOC = "catalog/cat.ttl";
+const CENTRAL_REGISTRY_URL =
+  "https://tmdt-solid-community-server.de/semanticdatacatalog/public/registry.ttl";
 const SOLID = {
   publicTypeIndex: "http://www.w3.org/ns/solid/terms#publicTypeIndex",
   TypeIndex: "http://www.w3.org/ns/solid/terms#TypeIndex",
@@ -268,8 +270,45 @@ export const ensureCatalogStructure = async (webId, fetch, { title, description 
 
   const publicTypeIndexUrl = await ensurePublicTypeIndex(webId, fetch);
   await registerCatalogInTypeIndex(publicTypeIndexUrl, catalogUrl, fetch);
+  await registerWebIdInCentralRegistry(webId, fetch);
 
   return { catalogDocUrl, catalogUrl, registryDocUrl };
+};
+
+const registerWebIdInCentralRegistry = async (webId, fetch) => {
+  if (!webId) return;
+  try {
+    let registryDataset;
+    try {
+      registryDataset = await getSolidDataset(CENTRAL_REGISTRY_URL, { fetch });
+    } catch (err) {
+      if (err?.statusCode === 404 || err?.response?.status === 404) {
+        registryDataset = createSolidDataset();
+      } else {
+        throw err;
+      }
+    }
+
+    let registryThing = getThing(registryDataset, `${CENTRAL_REGISTRY_URL}#it`);
+    if (!registryThing) {
+      registryThing = createThing({ url: `${CENTRAL_REGISTRY_URL}#it` });
+      registryThing = addUrl(registryThing, RDF.type, FOAF.Group);
+      registryThing = setStringNoLocale(
+        registryThing,
+        DCTERMS.title,
+        "Semantic Data Catalog Registry"
+      );
+    }
+    const members = getUrlAll(registryThing, FOAF.member);
+    if (!members.includes(webId)) {
+      registryThing = addUrl(registryThing, FOAF.member, webId);
+      registryThing = setDatetime(registryThing, DCTERMS.modified, new Date());
+      registryDataset = setThing(registryDataset, registryThing);
+      await saveSolidDatasetAt(CENTRAL_REGISTRY_URL, registryDataset, { fetch });
+    }
+  } catch (err) {
+    console.warn("Failed to register WebID in central registry:", err);
+  }
 };
 
 const deleteContainerContents = async (containerUrl, fetch) => {
