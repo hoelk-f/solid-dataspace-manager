@@ -25,6 +25,7 @@ import {
 } from "@inrupt/solid-client";
 import { FOAF, VCARD, LDP } from "@inrupt/vocab-common-rdf";
 import session from "../solidSession";
+import { ensureCatalogStructure, resolveCatalogUrl } from "../solidCatalog";
 import "./OnboardingWizard.css";
 
 const VCARD_TYPE = "http://www.w3.org/2006/vcard/ns#type";
@@ -83,12 +84,14 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
   const [photoSrc, setPhotoSrc] = useState("");
   const [photoUploading, setPhotoUploading] = useState(false);
   const [inboxAcknowledged, setInboxAcknowledged] = useState(false);
+  const [catalogUrl, setCatalogUrl] = useState("");
+  const [catalogAcknowledged, setCatalogAcknowledged] = useState(false);
 
   const steps = useMemo(
     () => [
       { id: 1, title: "Basics" },
       { id: 2, title: "Email" },
-      { id: 3, title: "Inbox" },
+      { id: 3, title: "Inbox & Catalog" },
     ],
     []
   );
@@ -138,14 +141,30 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
 
       const inbox = getUrl(me, LDP.inbox) || "";
       setInboxUrl(inbox);
+      setInboxAcknowledged(Boolean(inbox));
       const photo = getUrl(me, VCARD.hasPhoto) || getUrl(me, FOAF.img) || "";
       setPhotoIri(photo);
+
+      let catalogResolved = "";
+      let hasCatalog = false;
+      try {
+        catalogResolved = await resolveCatalogUrl(webId, session.fetch);
+        if (catalogResolved) {
+          await getSolidDataset(catalogResolved.split("#")[0], { fetch: session.fetch });
+          hasCatalog = true;
+        }
+      } catch {
+        hasCatalog = false;
+      }
+      setCatalogUrl(catalogResolved);
+      setCatalogAcknowledged(hasCatalog);
 
       const missingBasics = !(nm && org && role);
       const missingEmail = allEmails.length === 0;
       const missingInbox = !inbox;
+      const missingCatalog = !hasCatalog;
 
-      if (!missingBasics && !missingEmail && !missingInbox) {
+      if (!missingBasics && !missingEmail && !missingInbox && !missingCatalog) {
         onComplete();
         return;
       }
@@ -327,6 +346,15 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
     setInboxUrl(targetInboxUrl);
   };
 
+  const configureCatalog = async () => {
+    if (!webId) return;
+    const title = name ? `${name}'s Catalog` : "Solid Dataspace Catalog";
+    const { catalogUrl: configuredUrl } = await ensureCatalogStructure(webId, session.fetch, {
+      title,
+    });
+    setCatalogUrl(configuredUrl);
+  };
+
   const handleNext = async () => {
     setError("");
     setSaving(true);
@@ -339,6 +367,7 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
         setStep(3);
       } else if (step === 3) {
         await configureInbox();
+        await configureCatalog();
         onComplete();
       }
     } catch (err) {
@@ -496,9 +525,9 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
 
         {step === 3 && (
           <div className="onboarding-section">
-            <h3>Solid Inbox</h3>
+            <h3>Solid Inbox & Catalog</h3>
             <p>
-              Configure your Solid inbox to receive access requests and decisions.
+              Configure your Solid inbox and catalog so access requests and metadata stay in your pod.
             </p>
             <div className="onboarding-inbox">
               <div className="onboarding-inbox__label">Inbox URL</div>
@@ -516,6 +545,25 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
                   onChange={(e) => setInboxAcknowledged(e.target.checked)}
                 />
                 <span>I understand that finishing will create and configure my inbox.</span>
+              </label>
+            </div>
+
+            <div className="onboarding-inbox" style={{ marginTop: 18 }}>
+              <div className="onboarding-inbox__label">Catalog URL</div>
+              <div className="onboarding-inbox__value">
+                {catalogUrl || "Not configured"}
+              </div>
+              <div className="onboarding-inbox__hint">
+                The catalog metadata will be created in a <code>dcat/</code> container in your pod,
+                alongside a registry that can list other catalog members.
+              </div>
+              <label className="onboarding-checkbox">
+                <input
+                  type="checkbox"
+                  checked={catalogAcknowledged}
+                  onChange={(e) => setCatalogAcknowledged(e.target.checked)}
+                />
+                <span>I understand that finishing will create and configure my catalog.</span>
               </label>
             </div>
           </div>
@@ -538,7 +586,7 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
               saving ||
               (step === 1 && !basicsComplete) ||
               (step === 2 && !emailsComplete) ||
-              (step === 3 && !inboxAcknowledged)
+              (step === 3 && (!inboxAcknowledged || !catalogAcknowledged))
             }
           >
             {saving ? "Saving..." : step === 3 ? "Finish" : "Next"}

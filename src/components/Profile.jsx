@@ -30,8 +30,14 @@ import AlertModal from "./AlertModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUserCircle, faPen, faPlus, faTrash,
-  faEnvelope, faInbox
+  faEnvelope, faInbox, faBookOpen
 } from "@fortawesome/free-solid-svg-icons";
+import {
+  ensureCatalogStructure,
+  loadCatalogRegistryMembers,
+  resolveCatalogUrl,
+  saveCatalogRegistryMembers,
+} from "../solidCatalog";
 
 const VCARD_TYPE = "http://www.w3.org/2006/vcard/ns#type";
 
@@ -149,6 +155,11 @@ export default function Profile({ webId }) {
   const [editContact, setEditContact] = useState(false);
   const [inboxUrl, setInboxUrl] = useState("");
   const [inboxConfiguring, setInboxConfiguring] = useState(false);
+  const [catalogUrl, setCatalogUrl] = useState("");
+  const [catalogConfiguring, setCatalogConfiguring] = useState(false);
+  const [registryMembers, setRegistryMembers] = useState([]);
+  const [registryInput, setRegistryInput] = useState("");
+  const [registryUpdating, setRegistryUpdating] = useState(false);
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
 
@@ -210,6 +221,10 @@ export default function Profile({ webId }) {
         const ph = getUrl(me, VCARD.hasPhoto) || getUrl(me, FOAF.img) || "";
         setPhotoIri(ph);
         setInboxUrl(getUrl(me, LDP.inbox) || "");
+        const resolvedCatalog = await resolveCatalogUrl(webId, session.fetch);
+        setCatalogUrl(resolvedCatalog || "");
+        const members = await loadCatalogRegistryMembers(webId, session.fetch);
+        setRegistryMembers(members);
       } catch (e) {
         console.error("Loading profile failed:", e);
         showAlert("Profile could not be loaded.");
@@ -377,6 +392,40 @@ export default function Profile({ webId }) {
     }
   };
 
+  const configureCatalog = async () => {
+    if (!webId) return;
+    try {
+      setCatalogConfiguring(true);
+      const title = name ? `${name}'s Catalog` : "Solid Dataspace Catalog";
+      const { catalogUrl: configuredUrl } = await ensureCatalogStructure(webId, session.fetch, {
+        title,
+      });
+      setCatalogUrl(configuredUrl || "");
+      const members = await loadCatalogRegistryMembers(webId, session.fetch);
+      setRegistryMembers(members);
+      showAlert("Catalog initialized.");
+    } catch (err) {
+      console.error("Catalog setup failed:", err);
+      showAlert("Catalog setup failed.");
+    } finally {
+      setCatalogConfiguring(false);
+    }
+  };
+
+  const updateRegistryMembers = async (nextMembers) => {
+    if (!webId) return;
+    try {
+      setRegistryUpdating(true);
+      await saveCatalogRegistryMembers(webId, session.fetch, nextMembers);
+      setRegistryMembers(nextMembers);
+    } catch (err) {
+      console.error("Registry update failed:", err);
+      showAlert("Registry update failed.");
+    } finally {
+      setRegistryUpdating(false);
+    }
+  };
+
   if (loading) return (
     <>
       <p>Loading profile…</p>
@@ -499,6 +548,100 @@ export default function Profile({ webId }) {
                   ? "Reconfigure Inbox"
                   : "Configure Inbox"}
             </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="pf-card">
+        <div className="pf-card__head">
+          <div className="pf-card__title">
+            <FontAwesomeIcon icon={faBookOpen} className="pf-card__titleIcon" />
+            <span>Solid Catalog</span>
+          </div>
+        </div>
+        <div className="pf-card__body">
+          <div className="pf-ro">
+            <div className="pf-label">Catalog URL</div>
+            <div className="pf-value">
+              {catalogUrl ? (
+                <a href={catalogUrl} target="_blank" rel="noopener noreferrer">
+                  {catalogUrl}
+                </a>
+              ) : (
+                <span className="pf-muted">Not configured</span>
+              )}
+            </div>
+          </div>
+          <div className="pf-muted" style={{ marginTop: 8 }}>
+            The catalog metadata and registry live in your pod under <code>dcat/</code>.
+          </div>
+          <div className="pf-actions" style={{ marginTop: 12 }}>
+            <button
+              type="button"
+              className="pf-btn primary"
+              onClick={configureCatalog}
+              disabled={catalogConfiguring}
+            >
+              {catalogConfiguring
+                ? "Configuring..."
+                : catalogUrl
+                  ? "Reconfigure Catalog"
+                  : "Configure Catalog"}
+            </button>
+          </div>
+
+          <div className="pf-subtitle" style={{ marginTop: 16 }}>
+            Catalog Registry Members
+          </div>
+          <div className="pf-muted" style={{ marginBottom: 10 }}>
+            Add WebIDs to aggregate their catalog entries in the Semantic Data Catalog.
+          </div>
+          <div className="pf-list">
+            {registryMembers.map((member) => (
+              <div key={member} className="pf-listRow">
+                <div className="pf-chip">{member}</div>
+                {member !== webId && (
+                  <button
+                    type="button"
+                    className="pf-iconBtn danger"
+                    onClick={() =>
+                      updateRegistryMembers(registryMembers.filter((item) => item !== member))
+                    }
+                    title="Remove member"
+                    disabled={registryUpdating}
+                  >
+                    <FontAwesomeIcon icon={faTrash} />
+                  </button>
+                )}
+              </div>
+            ))}
+            <div className="pf-listRow">
+              <input
+                className="pf-input"
+                type="url"
+                placeholder="https://pod.example/profile/card#me"
+                value={registryInput}
+                onChange={(e) => setRegistryInput(e.target.value)}
+              />
+              <button
+                type="button"
+                className="pf-iconBtn"
+                onClick={() => {
+                  const candidate = registryInput.trim();
+                  if (!candidate) return;
+                  if (registryMembers.includes(candidate)) {
+                    setRegistryInput("");
+                    return;
+                  }
+                  updateRegistryMembers([...registryMembers, candidate]);
+                  setRegistryInput("");
+                }}
+                title="Add member"
+                disabled={registryUpdating}
+              >
+                <FontAwesomeIcon icon={faPlus} />
+              </button>
+            </div>
           </div>
         </div>
       </div>
