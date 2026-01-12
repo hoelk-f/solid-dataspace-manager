@@ -5,6 +5,7 @@ import {
   createThing,
   getSolidDataset,
   getSolidDatasetWithAcl,
+  getContainedResourceUrlAll,
   getThing,
   getThingAll,
   getUrl,
@@ -21,6 +22,7 @@ import {
   setUrl,
   createAclFromFallbackAcl,
   getResourceAcl,
+  deleteFile,
 } from "@inrupt/solid-client";
 import { DCAT, DCTERMS, FOAF, RDF } from "@inrupt/vocab-common-rdf";
 
@@ -268,6 +270,43 @@ export const ensureCatalogStructure = async (webId, fetch, { title, description 
   await registerCatalogInTypeIndex(publicTypeIndexUrl, catalogUrl, fetch);
 
   return { catalogDocUrl, catalogUrl, registryDocUrl };
+};
+
+const deleteContainerContents = async (containerUrl, fetch) => {
+  const dataset = await getSolidDataset(containerUrl, { fetch });
+  const resources = getContainedResourceUrlAll(dataset);
+  for (const resourceUrl of resources) {
+    if (resourceUrl.endsWith("/")) {
+      await deleteContainerContents(resourceUrl, fetch);
+      try {
+        await deleteFile(resourceUrl, { fetch });
+      } catch (err) {
+        console.warn("Failed to delete container", resourceUrl, err);
+      }
+    } else {
+      try {
+        await deleteFile(resourceUrl, { fetch });
+      } catch (err) {
+        console.warn("Failed to delete resource", resourceUrl, err);
+      }
+    }
+  }
+};
+
+export const resetCatalog = async (webId, fetch, { title, description } = {}) => {
+  const podRoot = getPodRoot(webId);
+  const catalogContainerUrl = `${podRoot}${CATALOG_CONTAINER}`;
+  try {
+    await deleteContainerContents(catalogContainerUrl, fetch);
+    await deleteFile(catalogContainerUrl, { fetch });
+  } catch (err) {
+    const status = err?.statusCode || err?.response?.status;
+    if (status !== 404) {
+      console.warn("Failed to delete catalog container", err);
+    }
+  }
+
+  return ensureCatalogStructure(webId, fetch, { title, description });
 };
 
 export const loadCatalogRegistryMembers = async (webId, fetch) => {

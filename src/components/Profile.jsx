@@ -27,12 +27,13 @@ import session from "../solidSession";
 import { VCARD, FOAF, LDP } from "@inrupt/vocab-common-rdf";
 import "./Profile.css";
 import AlertModal from "./AlertModal";
+import ConfirmModal from "./ConfirmModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUserCircle, faPen, faPlus, faTrash,
   faEnvelope, faInbox, faBookOpen
 } from "@fortawesome/free-solid-svg-icons";
-import { ensureCatalogStructure, resolveCatalogUrl } from "../solidCatalog";
+import { ensureCatalogStructure, resolveCatalogUrl, resetCatalog } from "../solidCatalog";
 
 const VCARD_TYPE = "http://www.w3.org/2006/vcard/ns#type";
 
@@ -152,6 +153,8 @@ export default function Profile({ webId }) {
   const [inboxConfiguring, setInboxConfiguring] = useState(false);
   const [catalogUrl, setCatalogUrl] = useState("");
   const [catalogConfiguring, setCatalogConfiguring] = useState(false);
+  const [catalogResetting, setCatalogResetting] = useState(false);
+  const [showCatalogResetConfirm, setShowCatalogResetConfirm] = useState(false);
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
 
@@ -400,6 +403,25 @@ export default function Profile({ webId }) {
     }
   };
 
+  const handleCatalogReset = async () => {
+    if (!webId) return;
+    try {
+      setCatalogResetting(true);
+      const title = name ? `${name}'s Catalog` : "Solid Dataspace Catalog";
+      const { catalogUrl: configuredUrl } = await resetCatalog(webId, session.fetch, {
+        title,
+      });
+      setCatalogUrl(configuredUrl || "");
+      showAlert("Catalog reset completed.");
+    } catch (err) {
+      console.error("Catalog reset failed:", err);
+      showAlert("Catalog reset failed.");
+    } finally {
+      setCatalogResetting(false);
+      setShowCatalogResetConfirm(false);
+    }
+  };
+
   if (loading) return (
     <>
       <p>Loading profile…</p>
@@ -562,6 +584,14 @@ export default function Profile({ webId }) {
                   ? "Reconfigure Catalog"
                   : "Configure Catalog"}
             </button>
+            <button
+              type="button"
+              className="pf-btn ghost"
+              onClick={() => setShowCatalogResetConfirm(true)}
+              disabled={catalogResetting}
+            >
+              {catalogResetting ? "Resetting..." : "Reset Catalog"}
+            </button>
           </div>
         </div>
       </div>
@@ -576,6 +606,15 @@ export default function Profile({ webId }) {
         show={alertOpen}
         message={alertMessage}
         onClose={() => setAlertOpen(false)}
+      />
+      <ConfirmModal
+        show={showCatalogResetConfirm}
+        title="Reset catalog?"
+        message="This will delete all catalog metadata in your pod and recreate a fresh catalog structure."
+        confirmLabel="Reset Catalog"
+        cancelLabel="Cancel"
+        onClose={() => setShowCatalogResetConfirm(false)}
+        onConfirm={handleCatalogReset}
       />
     </>
   );
