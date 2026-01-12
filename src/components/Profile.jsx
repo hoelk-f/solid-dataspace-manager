@@ -397,7 +397,7 @@ export default function Profile({ webId }) {
       showAlert("Catalog initialized.");
     } catch (err) {
       console.error("Catalog setup failed:", err);
-      showAlert("Catalog setup failed.");
+      showAlert(err?.message || "Catalog setup failed.");
     } finally {
       setCatalogConfiguring(false);
     }
@@ -415,7 +415,7 @@ export default function Profile({ webId }) {
       showAlert("Catalog reset completed.");
     } catch (err) {
       console.error("Catalog reset failed:", err);
-      showAlert("Catalog reset failed.");
+      showAlert(err?.message || "Catalog reset failed.");
     } finally {
       setCatalogResetting(false);
       setShowCatalogResetConfirm(false);

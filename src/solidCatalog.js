@@ -277,37 +277,41 @@ export const ensureCatalogStructure = async (webId, fetch, { title, description 
 
 const registerWebIdInCentralRegistry = async (webId, fetch) => {
   if (!webId) return;
+  let registryDataset;
   try {
-    let registryDataset;
-    try {
-      registryDataset = await getSolidDataset(CENTRAL_REGISTRY_URL, { fetch });
-    } catch (err) {
-      if (err?.statusCode === 404 || err?.response?.status === 404) {
-        registryDataset = createSolidDataset();
-      } else {
-        throw err;
-      }
-    }
-
-    let registryThing = getThing(registryDataset, `${CENTRAL_REGISTRY_URL}#it`);
-    if (!registryThing) {
-      registryThing = createThing({ url: `${CENTRAL_REGISTRY_URL}#it` });
-      registryThing = addUrl(registryThing, RDF.type, FOAF.Group);
-      registryThing = setStringNoLocale(
-        registryThing,
-        DCTERMS.title,
-        "Semantic Data Catalog Registry"
+    registryDataset = await getSolidDataset(CENTRAL_REGISTRY_URL, { fetch });
+  } catch (err) {
+    if (err?.statusCode === 404 || err?.response?.status === 404) {
+      registryDataset = createSolidDataset();
+    } else {
+      throw new Error(
+        `Failed to read central registry (${CENTRAL_REGISTRY_URL}): ${err?.statusCode || err}`
       );
     }
-    const members = getUrlAll(registryThing, FOAF.member);
-    if (!members.includes(webId)) {
-      registryThing = addUrl(registryThing, FOAF.member, webId);
-      registryThing = setDatetime(registryThing, DCTERMS.modified, new Date());
-      registryDataset = setThing(registryDataset, registryThing);
+  }
+
+  let registryThing = getThing(registryDataset, `${CENTRAL_REGISTRY_URL}#it`);
+  if (!registryThing) {
+    registryThing = createThing({ url: `${CENTRAL_REGISTRY_URL}#it` });
+    registryThing = addUrl(registryThing, RDF.type, FOAF.Group);
+    registryThing = setStringNoLocale(
+      registryThing,
+      DCTERMS.title,
+      "Semantic Data Catalog Registry"
+    );
+  }
+  const members = getUrlAll(registryThing, FOAF.member);
+  if (!members.includes(webId)) {
+    registryThing = addUrl(registryThing, FOAF.member, webId);
+    registryThing = setDatetime(registryThing, DCTERMS.modified, new Date());
+    registryDataset = setThing(registryDataset, registryThing);
+    try {
       await saveSolidDatasetAt(CENTRAL_REGISTRY_URL, registryDataset, { fetch });
+    } catch (err) {
+      throw new Error(
+        `Failed to write central registry (${CENTRAL_REGISTRY_URL}): ${err?.statusCode || err}`
+      );
     }
-  } catch (err) {
-    console.warn("Failed to register WebID in central registry:", err);
   }
 };
 

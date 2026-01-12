@@ -372,7 +372,7 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
       }
     } catch (err) {
       console.error("Setup step failed:", err);
-      setError("Saving failed. Please try again.");
+      setError(err?.message || "Saving failed. Please try again.");
     } finally {
       setSaving(false);
     }
