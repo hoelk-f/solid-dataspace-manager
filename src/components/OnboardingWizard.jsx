@@ -554,8 +554,7 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
                 {catalogUrl || "Not configured"}
               </div>
               <div className="onboarding-inbox__hint">
-                The catalog metadata will be created in a <code>dcat/</code> container in your pod,
-                alongside a registry that can list other catalog members.
+                The catalog metadata will be created in a <code>catalog/</code> container in your pod.
               </div>
               <label className="onboarding-checkbox">
                 <input

@@ -11,6 +11,7 @@ import ProfilePage from "./components/ProfilePage";
 import Notifications from "./components/Notifications";
 import DecisionInbox from "./components/DecisionInbox";
 import OnboardingWizard from "./components/OnboardingWizard";
+import { resolveCatalogUrl } from "./solidCatalog";
 
 const App = () => {
   const [webId, setWebId] = useState("");
@@ -75,8 +76,18 @@ const App = () => {
         const missingBasics = !(name && org && role);
         const missingEmail = allEmails.length === 0;
         const missingInbox = !inbox;
+        let missingCatalog = true;
+        try {
+          const catalogUrl = await resolveCatalogUrl(webId, session.fetch);
+          if (catalogUrl) {
+            await getSolidDataset(catalogUrl.split("#")[0], { fetch: session.fetch });
+            missingCatalog = false;
+          }
+        } catch {
+          missingCatalog = true;
+        }
 
-        setOnboardingRequired(missingBasics || missingEmail || missingInbox);
+        setOnboardingRequired(missingBasics || missingEmail || missingInbox || missingCatalog);
       } catch (err) {
         console.error("Profile completeness check failed:", err);
         setOnboardingRequired(true);

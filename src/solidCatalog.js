@@ -24,12 +24,12 @@ import {
 } from "@inrupt/solid-client";
 import { DCAT, DCTERMS, FOAF, RDF } from "@inrupt/vocab-common-rdf";
 
-const CATALOG_CONTAINER = "dcat/";
-const DATASET_CONTAINER = "dcat/ds/";
-const SERIES_CONTAINER = "dcat/series/";
-const RECORDS_CONTAINER = "dcat/records/";
-const REGISTRY_DOC = "dcat/registry.ttl";
-const CATALOG_DOC = "dcat/cat.ttl";
+const CATALOG_CONTAINER = "catalog/";
+const DATASET_CONTAINER = "catalog/ds/";
+const SERIES_CONTAINER = "catalog/series/";
+const RECORDS_CONTAINER = "catalog/records/";
+const REGISTRY_DOC = "catalog/registry.ttl";
+const CATALOG_DOC = "catalog/cat.ttl";
 const SOLID = {
   publicTypeIndex: "http://www.w3.org/ns/solid/terms#publicTypeIndex",
   TypeIndex: "http://www.w3.org/ns/solid/terms#TypeIndex",
@@ -49,13 +49,13 @@ export const getPodRoot = (webId) => {
 
 const ensureContainer = async (containerUrl, fetch) => {
   try {
-    await getSolidDataset(containerUrl, { fetch });
+    await createContainerAt(containerUrl, { fetch });
   } catch (err) {
-    if (err?.statusCode === 404 || err?.response?.status === 404) {
-      await createContainerAt(containerUrl, { fetch });
-    } else {
-      throw err;
+    const status = err?.statusCode || err?.response?.status;
+    if (status === 409 || status === 412) {
+      return;
     }
+    throw err;
   }
 };
 

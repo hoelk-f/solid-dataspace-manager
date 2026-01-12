@@ -80,7 +80,7 @@ function Info() {
         <p>
           The catalog is the entry point to the dataspace. It allows providers to publish datasets and
           consumers to discover and reuse data sources hosted in Pods. Catalog metadata lives inside
-          each owner&apos;s pod under a <code>dcat/</code> container and is discovered through a public
+          each owner&apos;s pod under a <code>catalog/</code> container and is discovered through a public
           type index plus a registry of dataspace members.
         </p>
       </div>

@@ -32,12 +32,7 @@ import {
   faUserCircle, faPen, faPlus, faTrash,
   faEnvelope, faInbox, faBookOpen
 } from "@fortawesome/free-solid-svg-icons";
-import {
-  ensureCatalogStructure,
-  loadCatalogRegistryMembers,
-  resolveCatalogUrl,
-  saveCatalogRegistryMembers,
-} from "../solidCatalog";
+import { ensureCatalogStructure, resolveCatalogUrl } from "../solidCatalog";
 
 const VCARD_TYPE = "http://www.w3.org/2006/vcard/ns#type";
 
@@ -157,9 +152,6 @@ export default function Profile({ webId }) {
   const [inboxConfiguring, setInboxConfiguring] = useState(false);
   const [catalogUrl, setCatalogUrl] = useState("");
   const [catalogConfiguring, setCatalogConfiguring] = useState(false);
-  const [registryMembers, setRegistryMembers] = useState([]);
-  const [registryInput, setRegistryInput] = useState("");
-  const [registryUpdating, setRegistryUpdating] = useState(false);
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
 
@@ -223,8 +215,6 @@ export default function Profile({ webId }) {
         setInboxUrl(getUrl(me, LDP.inbox) || "");
         const resolvedCatalog = await resolveCatalogUrl(webId, session.fetch);
         setCatalogUrl(resolvedCatalog || "");
-        const members = await loadCatalogRegistryMembers(webId, session.fetch);
-        setRegistryMembers(members);
       } catch (e) {
         console.error("Loading profile failed:", e);
         showAlert("Profile could not be loaded.");
@@ -401,28 +391,12 @@ export default function Profile({ webId }) {
         title,
       });
       setCatalogUrl(configuredUrl || "");
-      const members = await loadCatalogRegistryMembers(webId, session.fetch);
-      setRegistryMembers(members);
       showAlert("Catalog initialized.");
     } catch (err) {
       console.error("Catalog setup failed:", err);
       showAlert("Catalog setup failed.");
     } finally {
       setCatalogConfiguring(false);
-    }
-  };
-
-  const updateRegistryMembers = async (nextMembers) => {
-    if (!webId) return;
-    try {
-      setRegistryUpdating(true);
-      await saveCatalogRegistryMembers(webId, session.fetch, nextMembers);
-      setRegistryMembers(nextMembers);
-    } catch (err) {
-      console.error("Registry update failed:", err);
-      showAlert("Registry update failed.");
-    } finally {
-      setRegistryUpdating(false);
     }
   };
 
@@ -533,7 +507,7 @@ export default function Profile({ webId }) {
             </div>
           </div>
           <div className="pf-muted" style={{ marginTop: 8 }}>
-            Access requests are delivered to this inbox.
+            Access requests and decisions are delivered to this inbox.
           </div>
           <div className="pf-actions" style={{ marginTop: 12 }}>
             <button
@@ -556,7 +530,7 @@ export default function Profile({ webId }) {
         <div className="pf-card__head">
           <div className="pf-card__title">
             <FontAwesomeIcon icon={faBookOpen} className="pf-card__titleIcon" />
-            <span>Solid Catalog</span>
+            <span>Semantic Data Catalog</span>
           </div>
         </div>
         <div className="pf-card__body">
@@ -573,7 +547,7 @@ export default function Profile({ webId }) {
             </div>
           </div>
           <div className="pf-muted" style={{ marginTop: 8 }}>
-            The catalog metadata and registry live in your pod under <code>dcat/</code>.
+            The catalog metadata is stored in your pod under <code>catalog/</code>.
           </div>
           <div className="pf-actions" style={{ marginTop: 12 }}>
             <button
@@ -588,60 +562,6 @@ export default function Profile({ webId }) {
                   ? "Reconfigure Catalog"
                   : "Configure Catalog"}
             </button>
-          </div>
-
-          <div className="pf-subtitle" style={{ marginTop: 16 }}>
-            Catalog Registry Members
-          </div>
-          <div className="pf-muted" style={{ marginBottom: 10 }}>
-            Add WebIDs to aggregate their catalog entries in the Semantic Data Catalog.
-          </div>
-          <div className="pf-list">
-            {registryMembers.map((member) => (
-              <div key={member} className="pf-listRow">
-                <div className="pf-chip">{member}</div>
-                {member !== webId && (
-                  <button
-                    type="button"
-                    className="pf-iconBtn danger"
-                    onClick={() =>
-                      updateRegistryMembers(registryMembers.filter((item) => item !== member))
-                    }
-                    title="Remove member"
-                    disabled={registryUpdating}
-                  >
-                    <FontAwesomeIcon icon={faTrash} />
-                  </button>
-                )}
-              </div>
-            ))}
-            <div className="pf-listRow">
-              <input
-                className="pf-input"
-                type="url"
-                placeholder="https://pod.example/profile/card#me"
-                value={registryInput}
-                onChange={(e) => setRegistryInput(e.target.value)}
-              />
-              <button
-                type="button"
-                className="pf-iconBtn"
-                onClick={() => {
-                  const candidate = registryInput.trim();
-                  if (!candidate) return;
-                  if (registryMembers.includes(candidate)) {
-                    setRegistryInput("");
-                    return;
-                  }
-                  updateRegistryMembers([...registryMembers, candidate]);
-                  setRegistryInput("");
-                }}
-                title="Add member"
-                disabled={registryUpdating}
-              >
-                <FontAwesomeIcon icon={faPlus} />
-              </button>
-            </div>
           </div>
         </div>
       </div>
