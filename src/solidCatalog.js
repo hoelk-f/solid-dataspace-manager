@@ -38,6 +38,15 @@ const SOLID = {
   instance: "http://www.w3.org/ns/solid/terms#instance",
 };
 
+const resolveUrl = (value, base) => {
+  if (!value) return "";
+  try {
+    return new URL(value, base).href;
+  } catch {
+    return value;
+  }
+};
+
 export const getPodRoot = (webId) => {
   const url = new URL(webId);
   const segments = url.pathname.split("/").filter(Boolean);
@@ -48,6 +57,17 @@ export const getPodRoot = (webId) => {
 };
 
 const ensureContainer = async (containerUrl, fetch) => {
+  try {
+    const res = await fetch(containerUrl, {
+      method: "GET",
+      headers: { Accept: "text/turtle" },
+    });
+    if (res.ok) return;
+    if (res.status !== 404) return;
+  } catch {
+    // Continue and attempt creation.
+  }
+
   try {
     await createContainerAt(containerUrl, { fetch });
   } catch (err) {
