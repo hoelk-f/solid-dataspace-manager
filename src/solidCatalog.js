@@ -30,25 +30,15 @@ const CATALOG_CONTAINER = "catalog/";
 const DATASET_CONTAINER = "catalog/ds/";
 const SERIES_CONTAINER = "catalog/series/";
 const RECORDS_CONTAINER = "catalog/records/";
-const REGISTRY_DOC = "catalog/registry.ttl";
 const CATALOG_DOC = "catalog/cat.ttl";
-const CENTRAL_REGISTRY_URL =
-  "https://tmdt-solid-community-server.de/semanticdatacatalog/public/registry.ttl";
+const CENTRAL_REGISTRY_CONTAINER =
+  "https://tmdt-solid-community-server.de/semanticdatacatalog/public/registry/";
 const SOLID = {
   publicTypeIndex: "http://www.w3.org/ns/solid/terms#publicTypeIndex",
   TypeIndex: "http://www.w3.org/ns/solid/terms#TypeIndex",
   TypeRegistration: "http://www.w3.org/ns/solid/terms#TypeRegistration",
   forClass: "http://www.w3.org/ns/solid/terms#forClass",
   instance: "http://www.w3.org/ns/solid/terms#instance",
-};
-
-const resolveUrl = (value, base) => {
-  if (!value) return "";
-  try {
-    return new URL(value, base).href;
-  } catch {
-    return value;
-  }
 };
 
 export const getPodRoot = (webId) => {
@@ -165,8 +155,6 @@ const registerCatalogInTypeIndex = async (publicTypeIndexUrl, catalogUrl, fetch)
 
 export const getCatalogDocUrl = (webId) => `${getPodRoot(webId)}${CATALOG_DOC}`;
 export const getCatalogUrl = (webId) => `${getCatalogDocUrl(webId)}#it`;
-export const getRegistryDocUrl = (webId) => `${getPodRoot(webId)}${REGISTRY_DOC}`;
-
 export const resolveCatalogUrl = async (webId, fetch) => {
   try {
     const profileDocUrl = webId.split("#")[0];
@@ -198,6 +186,13 @@ export const ensureCatalogStructure = async (webId, fetch, { title, description 
   await ensureContainer(`${podRoot}${DATASET_CONTAINER}`, fetch);
   await ensureContainer(`${podRoot}${SERIES_CONTAINER}`, fetch);
   await ensureContainer(`${podRoot}${RECORDS_CONTAINER}`, fetch);
+
+  const legacyRegistryUrl = `${podRoot}catalog/registry.ttl`;
+  try {
+    await deleteFile(legacyRegistryUrl, { fetch });
+  } catch {
+    // Ignore missing legacy registry.
+  }
 
   const catalogDocUrl = getCatalogDocUrl(webId);
   const catalogUrl = `${catalogDocUrl}#it`;
@@ -235,83 +230,61 @@ export const ensureCatalogStructure = async (webId, fetch, { title, description 
   catalogDataset = setThing(catalogDataset, catalogThing);
   await saveSolidDatasetAt(catalogDocUrl, catalogDataset, { fetch });
 
-  const registryDocUrl = getRegistryDocUrl(webId);
-  let registryDataset;
-  try {
-    registryDataset = await getSolidDataset(registryDocUrl, { fetch });
-  } catch (err) {
-    if (err?.statusCode === 404 || err?.response?.status === 404) {
-      registryDataset = createSolidDataset();
-    } else {
-      throw err;
-    }
-  }
-
-  const registryUrl = `${registryDocUrl}#it`;
-  let registryThing = getThing(registryDataset, registryUrl);
-  if (!registryThing) {
-    registryThing = createThing({ url: registryUrl });
-  }
-  registryThing = removeAll(registryThing, RDF.type);
-  registryThing = addUrl(registryThing, RDF.type, FOAF.Group);
-  registryThing = removeAll(registryThing, DCTERMS.title);
-  registryThing = setStringNoLocale(registryThing, DCTERMS.title, "Dataspace Catalog Registry");
-  registryThing = removeAll(registryThing, FOAF.member);
-  registryThing = addUrl(registryThing, FOAF.member, webId);
-  registryThing = removeAll(registryThing, DCTERMS.modified);
-  registryThing = setDatetime(registryThing, DCTERMS.modified, new Date());
-
-  registryDataset = setThing(registryDataset, registryThing);
-  await saveSolidDatasetAt(registryDocUrl, registryDataset, { fetch });
-
   await makePublicReadable(catalogDocUrl, fetch);
-  await makePublicReadable(registryDocUrl, fetch);
   await makePublicReadable(`${podRoot}${CATALOG_CONTAINER}`, fetch);
 
   const publicTypeIndexUrl = await ensurePublicTypeIndex(webId, fetch);
   await registerCatalogInTypeIndex(publicTypeIndexUrl, catalogUrl, fetch);
   await registerWebIdInCentralRegistry(webId, fetch);
 
-  return { catalogDocUrl, catalogUrl, registryDocUrl };
+  return { catalogDocUrl, catalogUrl };
 };
 
 const registerWebIdInCentralRegistry = async (webId, fetch) => {
   if (!webId) return;
-  let registryDataset;
+  const containerUrl = CENTRAL_REGISTRY_CONTAINER;
   try {
-    registryDataset = await getSolidDataset(CENTRAL_REGISTRY_URL, { fetch });
-  } catch (err) {
-    if (err?.statusCode === 404 || err?.response?.status === 404) {
-      registryDataset = createSolidDataset();
-    } else {
-      throw new Error(
-        `Failed to read central registry (${CENTRAL_REGISTRY_URL}): ${err?.statusCode || err}`
-      );
+    const containerDataset = await getSolidDataset(containerUrl, { fetch });
+    const resources = getContainedResourceUrlAll(containerDataset);
+    for (const resourceUrl of resources) {
+      try {
+        const memberDataset = await getSolidDataset(resourceUrl, { fetch });
+        const memberThing =
+          getThing(memberDataset, `${resourceUrl}#it`) || getThingAll(memberDataset)[0];
+        const memberWebId = memberThing ? getUrl(memberThing, FOAF.member) : "";
+        if (memberWebId === webId) return;
+      } catch {
+        // Ignore malformed entries.
+      }
     }
-  }
 
-  let registryThing = getThing(registryDataset, `${CENTRAL_REGISTRY_URL}#it`);
-  if (!registryThing) {
-    registryThing = createThing({ url: `${CENTRAL_REGISTRY_URL}#it` });
-    registryThing = addUrl(registryThing, RDF.type, FOAF.Group);
-    registryThing = setStringNoLocale(
-      registryThing,
-      DCTERMS.title,
-      "Semantic Data Catalog Registry"
-    );
-  }
-  const members = getUrlAll(registryThing, FOAF.member);
-  if (!members.includes(webId)) {
-    registryThing = addUrl(registryThing, FOAF.member, webId);
-    registryThing = setDatetime(registryThing, DCTERMS.modified, new Date());
-    registryDataset = setThing(registryDataset, registryThing);
-    try {
-      await saveSolidDatasetAt(CENTRAL_REGISTRY_URL, registryDataset, { fetch });
-    } catch (err) {
+    const turtle = [
+      "@prefix foaf: <http://xmlns.com/foaf/0.1/>.",
+      "@prefix dcterms: <http://purl.org/dc/terms/>.",
+      "",
+      "<#it> a foaf:Group ;",
+      `  foaf:member <${webId}> ;`,
+      `  dcterms:modified "${new Date().toISOString()}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .`,
+      "",
+    ].join("\n");
+
+    const res = await fetch(containerUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/turtle",
+        "Slug": `member-${encodeURIComponent(webId)}`,
+      },
+      body: turtle,
+    });
+    if (!res.ok) {
       throw new Error(
-        `Failed to write central registry (${CENTRAL_REGISTRY_URL}): ${err?.statusCode || err}`
+        `Failed to write central registry (${containerUrl}): ${res.status}`
       );
     }
+  } catch (err) {
+    throw new Error(
+      `Failed to access central registry (${containerUrl}): ${err?.message || err}`
+    );
   }
 };
 
@@ -350,57 +323,4 @@ export const resetCatalog = async (webId, fetch, { title, description } = {}) =>
   }
 
   return ensureCatalogStructure(webId, fetch, { title, description });
-};
-
-export const loadCatalogRegistryMembers = async (webId, fetch) => {
-  const registryDocUrl = getRegistryDocUrl(webId);
-  try {
-    const registryDataset = await getSolidDataset(registryDocUrl, { fetch });
-    const registryThing = getThing(registryDataset, `${registryDocUrl}#it`);
-    const members = registryThing ? getUrlAll(registryThing, FOAF.member) : [];
-    const unique = new Set([webId, ...members]);
-    return Array.from(unique);
-  } catch (err) {
-    if (err?.statusCode !== 404 && err?.response?.status !== 404) {
-      console.warn("Failed to load catalog registry:", err);
-    }
-    return [webId];
-  }
-};
-
-export const saveCatalogRegistryMembers = async (webId, fetch, members) => {
-  const podRoot = getPodRoot(webId);
-  await ensureContainer(`${podRoot}${CATALOG_CONTAINER}`, fetch);
-  const registryDocUrl = getRegistryDocUrl(webId);
-  let registryDataset;
-  try {
-    registryDataset = await getSolidDataset(registryDocUrl, { fetch });
-  } catch (err) {
-    if (err?.statusCode === 404 || err?.response?.status === 404) {
-      registryDataset = createSolidDataset();
-    } else {
-      throw err;
-    }
-  }
-
-  const registryUrl = `${registryDocUrl}#it`;
-  let registryThing = getThing(registryDataset, registryUrl);
-  if (!registryThing) {
-    registryThing = createThing({ url: registryUrl });
-  }
-  registryThing = removeAll(registryThing, RDF.type);
-  registryThing = addUrl(registryThing, RDF.type, FOAF.Group);
-  registryThing = removeAll(registryThing, DCTERMS.title);
-  registryThing = setStringNoLocale(registryThing, DCTERMS.title, "Dataspace Catalog Registry");
-  registryThing = removeAll(registryThing, FOAF.member);
-  const unique = Array.from(new Set(members.filter(Boolean)));
-  unique.forEach((member) => {
-    registryThing = addUrl(registryThing, FOAF.member, member);
-  });
-  registryThing = removeAll(registryThing, DCTERMS.modified);
-  registryThing = setDatetime(registryThing, DCTERMS.modified, new Date());
-
-  registryDataset = setThing(registryDataset, registryThing);
-  await saveSolidDatasetAt(registryDocUrl, registryDataset, { fetch });
-  await makePublicReadable(registryDocUrl, fetch);
 };
