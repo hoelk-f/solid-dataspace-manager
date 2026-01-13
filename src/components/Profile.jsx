@@ -27,13 +27,11 @@ import session from "../solidSession";
 import { VCARD, FOAF, LDP } from "@inrupt/vocab-common-rdf";
 import "./Profile.css";
 import AlertModal from "./AlertModal";
-import ConfirmModal from "./ConfirmModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUserCircle, faPen, faPlus, faTrash,
-  faEnvelope, faInbox, faBookOpen
+  faEnvelope, faInbox
 } from "@fortawesome/free-solid-svg-icons";
-import { ensureCatalogStructure, resolveCatalogUrl, resetCatalog } from "../solidCatalog";
 
 const VCARD_TYPE = "http://www.w3.org/2006/vcard/ns#type";
 
@@ -151,10 +149,6 @@ export default function Profile({ webId }) {
   const [editContact, setEditContact] = useState(false);
   const [inboxUrl, setInboxUrl] = useState("");
   const [inboxConfiguring, setInboxConfiguring] = useState(false);
-  const [catalogUrl, setCatalogUrl] = useState("");
-  const [catalogConfiguring, setCatalogConfiguring] = useState(false);
-  const [catalogResetting, setCatalogResetting] = useState(false);
-  const [showCatalogResetConfirm, setShowCatalogResetConfirm] = useState(false);
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
 
@@ -216,8 +210,6 @@ export default function Profile({ webId }) {
         const ph = getUrl(me, VCARD.hasPhoto) || getUrl(me, FOAF.img) || "";
         setPhotoIri(ph);
         setInboxUrl(getUrl(me, LDP.inbox) || "");
-        const resolvedCatalog = await resolveCatalogUrl(webId, session.fetch);
-        setCatalogUrl(resolvedCatalog || "");
       } catch (e) {
         console.error("Loading profile failed:", e);
         showAlert("Profile could not be loaded.");
@@ -385,43 +377,6 @@ export default function Profile({ webId }) {
     }
   };
 
-  const configureCatalog = async () => {
-    if (!webId) return;
-    try {
-      setCatalogConfiguring(true);
-      const title = name ? `${name}'s Catalog` : "Solid Dataspace Catalog";
-      const { catalogUrl: configuredUrl } = await ensureCatalogStructure(webId, session.fetch, {
-        title,
-      });
-      setCatalogUrl(configuredUrl || "");
-      showAlert("Catalog initialized.");
-    } catch (err) {
-      console.error("Catalog setup failed:", err);
-      showAlert(err?.message || "Catalog setup failed.");
-    } finally {
-      setCatalogConfiguring(false);
-    }
-  };
-
-  const handleCatalogReset = async () => {
-    if (!webId) return;
-    try {
-      setCatalogResetting(true);
-      const title = name ? `${name}'s Catalog` : "Solid Dataspace Catalog";
-      const { catalogUrl: configuredUrl } = await resetCatalog(webId, session.fetch, {
-        title,
-      });
-      setCatalogUrl(configuredUrl || "");
-      showAlert("Catalog reset completed.");
-    } catch (err) {
-      console.error("Catalog reset failed:", err);
-      showAlert(err?.message || "Catalog reset failed.");
-    } finally {
-      setCatalogResetting(false);
-      setShowCatalogResetConfirm(false);
-    }
-  };
-
   if (loading) return (
     <>
       <p>Loading profile…</p>
@@ -529,7 +484,7 @@ export default function Profile({ webId }) {
             </div>
           </div>
           <div className="pf-muted" style={{ marginTop: 8 }}>
-            Access requests and decisions are delivered to this inbox.
+            Access requests are delivered to this inbox.
           </div>
           <div className="pf-actions" style={{ marginTop: 12 }}>
             <button
@@ -548,54 +503,6 @@ export default function Profile({ webId }) {
         </div>
       </div>
 
-      <div className="pf-card">
-        <div className="pf-card__head">
-          <div className="pf-card__title">
-            <FontAwesomeIcon icon={faBookOpen} className="pf-card__titleIcon" />
-            <span>Semantic Data Catalog</span>
-          </div>
-        </div>
-        <div className="pf-card__body">
-          <div className="pf-ro">
-            <div className="pf-label">Catalog URL</div>
-            <div className="pf-value">
-              {catalogUrl ? (
-                <a href={catalogUrl} target="_blank" rel="noopener noreferrer">
-                  {catalogUrl}
-                </a>
-              ) : (
-                <span className="pf-muted">Not configured</span>
-              )}
-            </div>
-          </div>
-          <div className="pf-muted" style={{ marginTop: 8 }}>
-            The catalog metadata is stored in your pod under <code>catalog/</code>.
-          </div>
-          <div className="pf-actions" style={{ marginTop: 12 }}>
-            <button
-              type="button"
-              className="pf-btn primary"
-              onClick={configureCatalog}
-              disabled={catalogConfiguring}
-            >
-              {catalogConfiguring
-                ? "Configuring..."
-                : catalogUrl
-                  ? "Reconfigure Catalog"
-                  : "Configure Catalog"}
-            </button>
-            <button
-              type="button"
-              className="pf-btn ghost"
-              onClick={() => setShowCatalogResetConfirm(true)}
-              disabled={catalogResetting}
-            >
-              {catalogResetting ? "Resetting..." : "Reset Catalog"}
-            </button>
-          </div>
-        </div>
-      </div>
-
       <div className="pf-actions">
         <button type="submit" className="pf-btn primary" disabled={saving}>
           {saving ? "Saving…" : "Save"}
@@ -606,15 +513,6 @@ export default function Profile({ webId }) {
         show={alertOpen}
         message={alertMessage}
         onClose={() => setAlertOpen(false)}
-      />
-      <ConfirmModal
-        show={showCatalogResetConfirm}
-        title="Reset catalog?"
-        message="This will delete all catalog metadata in your pod and recreate a fresh catalog structure."
-        confirmLabel="Reset Catalog"
-        cancelLabel="Cancel"
-        onClose={() => setShowCatalogResetConfirm(false)}
-        onConfirm={handleCatalogReset}
       />
     </>
   );

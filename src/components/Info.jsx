@@ -47,8 +47,8 @@ function Info() {
         </h2>
         <p>
           The Profile Manager helps you maintain your WebID profile with your name, organization,
-          role, email, and profile photo. It also provides tools to configure your Solid inbox and
-          to initialize the Solid catalog structure that stores your metadata in your pod.
+          role, email, and profile photo. It also provides tools to configure your Solid inbox so
+          access requests and decisions can be delivered to you.
         </p>
       </div>
 
@@ -79,9 +79,7 @@ function Info() {
         </h2>
         <p>
           The catalog is the entry point to the dataspace. It allows providers to publish datasets and
-          consumers to discover and reuse data sources hosted in Pods. Catalog metadata lives inside
-          each owner&apos;s pod under a <code>catalog/</code> container and is discovered through a public
-          type index plus a registry of dataspace members.
+          consumers to discover and reuse data sources hosted in Pods.
         </p>
       </div>
 
@@ -126,9 +124,8 @@ function Info() {
         <p>
           Data flows into Solid Pods via tools like Node-RED or manual uploads through the Data Manager.
           PLASMA adds semantic annotations before datasets are published in the Semantic Data Catalog.
-          The catalog UI aggregates metadata from all registered pod catalogs. Access requests are
-          handled in the Manager, while decisions are delivered back to requesters through inbox
-          notifications. Together these components form the Solid Dataspace.
+          Access requests are handled in the Manager, while decisions are delivered back to requesters
+          through inbox notifications. Together these components form the Solid Dataspace.
         </p>
       </div>
     </div>
