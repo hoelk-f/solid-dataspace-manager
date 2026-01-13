@@ -96,10 +96,21 @@ function FilesView({
   crumbs,
 }) {
   const [hideTtl, setHideTtl] = useState(true);
-  const visibleItems = (hideTtl
-    ? items.filter((item) => !item.url.toLowerCase().endsWith(".ttl"))
-    : items
-  )
+  const [showHidden, setShowHidden] = useState(false);
+  const visibleItems = items
+    .filter((item) => {
+      const name = decodeURIComponent(
+        item.url.replace(currentUrl, "").replace(/\/$/, "")
+      ).toLowerCase();
+      const isHidden =
+        name.startsWith(".") ||
+        name.endsWith(".acl") ||
+        name.endsWith(".acr") ||
+        name.endsWith(".meta");
+      if (!showHidden && isHidden) return false;
+      if (hideTtl && name.endsWith(".ttl")) return false;
+      return true;
+    })
     .slice()
     .sort((a, b) => {
       const aIsFolder = a.url.endsWith("/");
@@ -140,6 +151,19 @@ function FilesView({
           ))}
         </div>
         <div className="primary-actions">
+          <label
+            className="pill-checkbox"
+            title="Show hidden files"
+            style={{ display: "flex", alignItems: "center", gap: 8, marginRight: 8 }}
+          >
+            <input
+              type="checkbox"
+              checked={showHidden}
+              onChange={(e) => setShowHidden(e.target.checked)}
+              aria-label="Show hidden files"
+            />
+            <span>Show Hidden</span>
+          </label>
           <label
             className="pill-checkbox"
             title="Hide Semantic Model files"
