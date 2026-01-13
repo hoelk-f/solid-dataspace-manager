@@ -22,7 +22,7 @@
 
 .file-table th {
   text-align: left;
-  padding: .7rem 1rem;
+  padding: .55rem .8rem;
   font-weight: 800;
   color: var(--text);
   border-bottom: 1px solid var(--border);
@@ -39,7 +39,7 @@
 }
 
 .file-table td {
-  padding: .8rem 1rem;
+  padding: .6rem .8rem;
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
 }
@@ -64,9 +64,9 @@
   background: #eef2ff;
 }
 
-.file-table th:first-child,
-.file-table td:first-child {
-  width: 100%;
+.file-table th:nth-child(2),
+.file-table td:nth-child(2) {
+  width: 42%;
 }
 
 .file-table th:nth-child(4),
@@ -151,9 +151,8 @@
 
 
 .file-table-container {
-  height: calc(100vh - 220px);
-  min-height: calc(100vh - 220px);
-  max-height: none;
+  max-height: 68vh;
+  min-height: 0;
   overflow-y: auto;
   border: 1px solid var(--border);
   border-radius: 16px;
