@@ -187,7 +187,7 @@ function FilesView({
             <input
               type="checkbox"
               checked={showTtl}
-              onChange={(e) => setShowTtl(e.target.checked)}
+              onChange={(e) => onShowTtlChange(e.target.checked)}
               aria-label="Show .ttl files"
             />
             <span>Show .TTL files</span>
