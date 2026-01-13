@@ -134,6 +134,8 @@ function FilesView({
   onToggleSelect,
   onToggleSelectAll,
   onRowPreview,
+  onRowSelect,
+  onRowContextMenu,
   onDropOnFolder,
   onDragStartRow,
 }) {
@@ -222,7 +224,7 @@ function FilesView({
                 </tr>
               </thead>
               <tbody>
-                {visibleItems.map((item) => {
+                {visibleItems.map((item, index) => {
                   const { url, lastModified, isFolder, name, size } = item;
                   return (
                     <tr
@@ -230,6 +232,7 @@ function FilesView({
                       draggable={!isFolder}
                       className={selectedItems.has(url) ? "row-selected" : ""}
                       onDragStart={(event) => onDragStartRow(item, event)}
+                      onContextMenu={(event) => onRowContextMenu(item, event)}
                       onDragOver={(event) => {
                         if (isFolder) event.preventDefault();
                       }}
@@ -242,9 +245,8 @@ function FilesView({
                         if (event.target.closest("button") || event.target.closest("input")) {
                           return;
                         }
-                        if (!isFolder) {
-                          onRowPreview(item);
-                        }
+                        onRowSelect(item, index, event);
+                        if (!isFolder) onRowPreview(item);
                       }}
                     >
                       <td>
@@ -342,7 +344,7 @@ export default function DataManager({ webId }) {
   const [previewItem, setPreviewItem] = useState(null);
   const [previewContent, setPreviewContent] = useState("");
   const [previewLoading, setPreviewLoading] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
+  const [contextMenu, setContextMenu] = useState(null);
   const [bulkShareOpen, setBulkShareOpen] = useState(false);
   const [bulkShareWebId, setBulkShareWebId] = useState("");
   const [bulkShareEnabled, setBulkShareEnabled] = useState(false);
@@ -352,6 +354,7 @@ export default function DataManager({ webId }) {
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
   const [storageInfo, setStorageInfo] = useState({ totalBytes: 0, fileCount: 0 });
   const rootUrlRef = useRef("");
+  const lastSelectedIndexRef = useRef(null);
 
   useEffect(() => {
     if (!webId) return;
@@ -365,6 +368,13 @@ export default function DataManager({ webId }) {
     setCurrentUrl(rootUrl);
     loadItems(rootUrl, showHidden);
   }, [webId]);
+
+  useEffect(() => {
+    if (!contextMenu) return;
+    const closeMenu = () => setContextMenu(null);
+    window.addEventListener("click", closeMenu);
+    return () => window.removeEventListener("click", closeMenu);
+  }, [contextMenu]);
 
   useEffect(() => {
     const preventDefaults = (e) => {
@@ -454,6 +464,7 @@ export default function DataManager({ webId }) {
       );
       setItems(itemInfos);
       setSelectedItems(new Set());
+      lastSelectedIndexRef.current = null;
       const totalBytes = itemInfos
         .filter((item) => !item.isFolder && Number.isFinite(item.size))
         .reduce((sum, item) => sum + item.size, 0);
@@ -468,6 +479,7 @@ export default function DataManager({ webId }) {
     const nextUrl = url.endsWith("/") ? url : url + "/";
     setCurrentUrl(nextUrl);
     setSelectedItems(new Set());
+    lastSelectedIndexRef.current = null;
     setPreviewItem(null);
     loadItems(nextUrl, showHidden);
   };
@@ -804,6 +816,7 @@ export default function DataManager({ webId }) {
         await deleteRecursive(url);
       }
       setSelectedItems(new Set());
+      lastSelectedIndexRef.current = null;
       await loadItems(currentUrl, showHidden);
     } catch {
       showAlert("Bulk delete failed.");
@@ -853,7 +866,7 @@ export default function DataManager({ webId }) {
   return (
     <>
       <TopHeader />
-      <div className="data-manager-layout">
+      <div className={`data-manager-layout ${previewItem ? "" : "data-manager-layout--full"}`}>
         <div className="data-manager-main">
           <div className="data-toolbar">
             <div className="data-toolbar__left">
@@ -984,7 +997,44 @@ export default function DataManager({ webId }) {
             }}
             onRowPreview={(item) => {
               setPreviewItem(item);
-              setPreviewOpen(true);
+            }}
+            onRowSelect={(item, index, event) => {
+              const hasModifier = event.ctrlKey || event.metaKey;
+              const isShift = event.shiftKey;
+              setSelectedItems((prev) => {
+                const next = new Set(prev);
+                if (isShift && lastSelectedIndexRef.current !== null) {
+                  const start = Math.min(lastSelectedIndexRef.current, index);
+                  const end = Math.max(lastSelectedIndexRef.current, index);
+                  for (let i = start; i <= end; i += 1) {
+                    next.add(sortedItems[i].url);
+                  }
+                } else if (hasModifier) {
+                  if (next.has(item.url)) next.delete(item.url);
+                  else next.add(item.url);
+                  lastSelectedIndexRef.current = index;
+                } else {
+                  next.clear();
+                  next.add(item.url);
+                  lastSelectedIndexRef.current = index;
+                }
+                return next;
+              });
+            }}
+            onRowContextMenu={(item, event) => {
+              event.preventDefault();
+              setSelectedItems((prev) => {
+                if (prev.has(item.url)) return prev;
+                const next = new Set();
+                next.add(item.url);
+                return next;
+              });
+              setPreviewItem(item.isFolder ? null : item);
+              setContextMenu({
+                x: event.clientX,
+                y: event.clientY,
+                item,
+              });
             }}
             onDragStartRow={(item, event) => {
               const urls = selectedItems.has(item.url)
@@ -1000,8 +1050,28 @@ export default function DataManager({ webId }) {
               const copyMode = event.ctrlKey || event.altKey;
               await moveOrCopyItems(urls, folderUrl, copyMode);
             }}
-      />
+          />
         </div>
+        {previewItem && (
+          <div className="preview-panel">
+            <div className="preview-panel__header">
+              <FontAwesomeIcon icon={faEye} />
+              <span>Preview</span>
+            </div>
+            <div className="preview-panel__meta">
+              <div><strong>Name:</strong> {previewItem.name}</div>
+              <div><strong>Type:</strong> {getItemType(previewItem)}</div>
+              <div><strong>Size:</strong> {formatBytes(previewItem.size)}</div>
+            </div>
+            <div className="preview-panel__body">
+              {previewLoading ? (
+                <div className="preview-loading">Loading preview...</div>
+              ) : (
+                <pre className="preview-code">{previewContent || "No preview available."}</pre>
+              )}
+            </div>
+          </div>
+        )}
       </div>
       <CreateFolderModal
         show={folderModalOpen}
@@ -1051,36 +1121,71 @@ export default function DataManager({ webId }) {
         onClose={() => setBulkDeleteConfirm(false)}
         onConfirm={handleBulkDelete}
       />
-      {previewOpen && previewItem && (
-        <div className="modal-overlay">
-          <div className="modal-box preview-modal">
-            <div className="modal-header">
-              <span className="modal-title">Preview</span>
-              <button
-                className="modal-close"
-                onClick={() => {
-                  setPreviewOpen(false);
-                  setPreviewItem(null);
-                  setPreviewContent("");
-                }}
-                aria-label="Close"
-              >
-                &times;
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="preview-meta">
-                <div><strong>Name:</strong> {previewItem.name}</div>
-                <div><strong>Type:</strong> {getItemType(previewItem)}</div>
-                <div><strong>Size:</strong> {formatBytes(previewItem.size)}</div>
-              </div>
-              {previewLoading ? (
-                <div className="preview-loading">Loading preview...</div>
-              ) : (
-                <pre className="preview-code">{previewContent || "No preview available."}</pre>
-              )}
-            </div>
-          </div>
+      {contextMenu && (
+        <div
+          className="context-menu"
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+          onMouseLeave={() => setContextMenu(null)}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              setContextMenu(null);
+              openRenameModal(contextMenu.item.url);
+            }}
+          >
+            Rename
+          </button>
+          {!contextMenu.item.isFolder && (
+            <button
+              type="button"
+              onClick={() => {
+                setContextMenu(null);
+                downloadFile(contextMenu.item.url);
+              }}
+            >
+              Download
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              setContextMenu(null);
+              openShareModal(contextMenu.item.url);
+            }}
+          >
+            Share
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setContextMenu(null);
+              setBulkCopyMode(false);
+              setBulkMoveCopyOpen(true);
+            }}
+          >
+            Move
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setContextMenu(null);
+              setBulkCopyMode(true);
+              setBulkMoveCopyOpen(true);
+            }}
+          >
+            Copy
+          </button>
+          <button
+            type="button"
+            className="danger"
+            onClick={() => {
+              setContextMenu(null);
+              openDeleteModal(contextMenu.item.url);
+            }}
+          >
+            Delete
+          </button>
         </div>
       )}
       {bulkShareOpen && (
