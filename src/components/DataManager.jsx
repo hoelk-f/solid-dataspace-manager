@@ -21,18 +21,12 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faFolder,
   faFile,
-  faPlus,
   faUpload,
   faPen,
   faTrash,
   faDownload,
   faShareNodes,
   faChevronRight,
-  faLayerGroup,
-  faCopy,
-  faEye,
-  faFilter,
-  faSort
 } from "@fortawesome/free-solid-svg-icons";
 import "./DataManager.css";
 import CreateFolderModal from "./CreateFolderModal";
@@ -40,7 +34,6 @@ import ShareFileModal from "./ShareFileModal";
 import RenameItemModal from "./RenameItemModal";
 import AlertModal from "./AlertModal";
 import DeleteConfirmModal from "./DeleteConfirmModal";
-import ConfirmModal from "./ConfirmModal";
 
 const noCacheFetch = (input, init = {}) =>
   session.fetch(input, {
@@ -115,12 +108,8 @@ function TopHeader() {
 }
 
 function FilesView({
-  currentUrl,
   items,
   loading,
-  showTtl,
-  onShowTtlChange,
-  createFolder,
   uploadFile,
   navigateTo,
   renameItem,
@@ -128,16 +117,14 @@ function FilesView({
   downloadFile,
   shareItem,
   crumbs,
-  showHidden,
-  onShowHiddenChange,
-  selectedItems,
-  onToggleSelect,
-  onToggleSelectAll,
   onRowPreview,
   onRowSelect,
   onRowContextMenu,
   onDropOnFolder,
   onDragStartRow,
+  searchQuery,
+  onSearchQueryChange,
+  selectedItems,
 }) {
   const visibleItems = items;
   return (
@@ -166,38 +153,17 @@ function FilesView({
           ))}
         </div>
         <div className="primary-actions">
-          <label
-            className="pill-checkbox"
-            title="Show hidden files"
-            style={{ display: "flex", alignItems: "center", gap: 8, marginRight: 8 }}
-          >
-            <input
-              type="checkbox"
-              checked={showHidden}
-              onChange={(e) => onShowHiddenChange(e.target.checked)}
-              aria-label="Show hidden files"
-            />
-            <span>Show Hidden</span>
-          </label>
-          <label
-            className="pill-checkbox"
-            title="Show .TTL files"
-            style={{ display: "flex", alignItems: "center", gap: 8, marginRight: 8 }}
-          >
-            <input
-              type="checkbox"
-              checked={showTtl}
-              onChange={(e) => onShowTtlChange(e.target.checked)}
-              aria-label="Show .ttl files"
-            />
-            <span>Show .TTL files</span>
-          </label>
-          <button onClick={createFolder} className="pill-btn" title="Create new folder">
-            <FontAwesomeIcon icon={faPlus} /> <span>Folder</span>
-          </button>
           <button onClick={uploadFile} className="pill-btn" title="Upload file">
             <FontAwesomeIcon icon={faUpload} /> <span>Upload</span>
           </button>
+          <div className="data-search data-search--inline">
+            <input
+              type="text"
+              placeholder="Search files..."
+              value={searchQuery}
+              onChange={(e) => onSearchQueryChange(e.target.value)}
+            />
+          </div>
         </div>
       </div>
       {loading ? (
@@ -208,14 +174,6 @@ function FilesView({
             <table className="file-table">
               <thead>
                 <tr>
-                  <th className="th-check">
-                    <input
-                      type="checkbox"
-                      checked={items.length > 0 && selectedItems.size === items.length}
-                      onChange={onToggleSelectAll}
-                      aria-label="Select all items"
-                    />
-                  </th>
                   <th>Name</th>
                   <th>Type</th>
                   <th>Size</th>
@@ -249,14 +207,6 @@ function FilesView({
                         if (!isFolder) onRowPreview(item);
                       }}
                     >
-                      <td>
-                        <input
-                          type="checkbox"
-                          checked={selectedItems.has(url)}
-                          onChange={() => onToggleSelect(url)}
-                          aria-label={`Select ${name}`}
-                        />
-                      </td>
                       <td
                         onClick={() => isFolder && navigateTo(url)}
                         style={{ cursor: isFolder ? "pointer" : "default" }}
@@ -334,25 +284,16 @@ export default function DataManager({ webId }) {
   const [currentUrl, setCurrentUrl] = useState("");
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [showHidden, setShowHidden] = useState(false);
-  const [showTtl, setShowTtl] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [typeFilter, setTypeFilter] = useState("all");
-  const [sortBy, setSortBy] = useState("name");
-  const [sortDir, setSortDir] = useState("asc");
   const [selectedItems, setSelectedItems] = useState(new Set());
   const [previewItem, setPreviewItem] = useState(null);
   const [previewContent, setPreviewContent] = useState("");
   const [previewLoading, setPreviewLoading] = useState(false);
   const [contextMenu, setContextMenu] = useState(null);
-  const [bulkShareOpen, setBulkShareOpen] = useState(false);
-  const [bulkShareWebId, setBulkShareWebId] = useState("");
-  const [bulkShareEnabled, setBulkShareEnabled] = useState(false);
-  const [bulkMoveCopyOpen, setBulkMoveCopyOpen] = useState(false);
-  const [bulkMoveCopyTarget, setBulkMoveCopyTarget] = useState("");
-  const [bulkCopyMode, setBulkCopyMode] = useState(false);
-  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
-  const [storageInfo, setStorageInfo] = useState({ totalBytes: 0, fileCount: 0 });
+  const [moveCopyOpen, setMoveCopyOpen] = useState(false);
+  const [moveCopyTarget, setMoveCopyTarget] = useState("");
+  const [moveCopyMode, setMoveCopyMode] = useState(false);
+  const [moveCopySources, setMoveCopySources] = useState([]);
   const rootUrlRef = useRef("");
   const lastSelectedIndexRef = useRef(null);
 
@@ -366,7 +307,7 @@ export default function DataManager({ webId }) {
     const rootUrl = `${url.origin}${basePath}`;
     rootUrlRef.current = rootUrl;
     setCurrentUrl(rootUrl);
-    loadItems(rootUrl, showHidden);
+    loadItems(rootUrl);
   }, [webId]);
 
   useEffect(() => {
@@ -394,7 +335,7 @@ export default function DataManager({ webId }) {
         } catch {}
       });
       await Promise.all(uploadPromises);
-      loadItems(currentUrl, showHidden);
+      loadItems(currentUrl);
     };
     ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) =>
       window.addEventListener(eventName, preventDefaults, false)
@@ -408,7 +349,7 @@ export default function DataManager({ webId }) {
     };
   }, [currentUrl]);
 
-  const loadItems = async (url, includeHidden) => {
+  const loadItems = async (url) => {
     try {
       setLoading(true);
       setPreviewItem(null);
@@ -416,24 +357,6 @@ export default function DataManager({ webId }) {
       const dataset = await getSolidDataset(url, { fetch: noCacheFetch });
       const containedUrls = getContainedResourceUrlAll(dataset);
       let allUrls = [...containedUrls];
-
-      if (includeHidden) {
-        const hiddenSuffixes = [".acl", ".acr", ".meta"];
-        const candidateUrls = [url, ...containedUrls];
-        for (const baseUrl of candidateUrls) {
-          for (const suffix of hiddenSuffixes) {
-            const hiddenUrl = `${baseUrl}${suffix}`;
-            try {
-              const res = await noCacheFetch(hiddenUrl, { method: "HEAD" });
-              if (res.ok) {
-                allUrls.push(hiddenUrl);
-              }
-            } catch {
-              // Ignore missing hidden resources.
-            }
-          }
-        }
-      }
 
       allUrls = Array.from(new Set(allUrls));
       const itemInfos = await Promise.all(
@@ -465,11 +388,6 @@ export default function DataManager({ webId }) {
       setItems(itemInfos);
       setSelectedItems(new Set());
       lastSelectedIndexRef.current = null;
-      const totalBytes = itemInfos
-        .filter((item) => !item.isFolder && Number.isFinite(item.size))
-        .reduce((sum, item) => sum + item.size, 0);
-      const fileCount = itemInfos.filter((item) => !item.isFolder).length;
-      setStorageInfo({ totalBytes, fileCount });
     } catch {} finally {
       setLoading(false);
     }
@@ -481,7 +399,7 @@ export default function DataManager({ webId }) {
     setSelectedItems(new Set());
     lastSelectedIndexRef.current = null;
     setPreviewItem(null);
-    loadItems(nextUrl, showHidden);
+    loadItems(nextUrl);
   };
 
   const computeCrumbs = () => {
@@ -517,14 +435,12 @@ export default function DataManager({ webId }) {
     setAlertOpen(true);
   };
 
-  const openCreateFolderModal = () => setFolderModalOpen(true);
-
   const handleCreateFolder = async (name) => {
     if (!name) return;
     const folderUrl = currentUrl + name + "/";
     try {
       await createContainerAt(folderUrl, { fetch: noCacheFetch });
-      await loadItems(currentUrl, showHidden);
+      await loadItems(currentUrl);
     } catch {
       showAlert("Failed to create folder.");
     }
@@ -554,7 +470,7 @@ export default function DataManager({ webId }) {
     if (!deleteTargetUrl) return;
     try {
       await deleteRecursive(deleteTargetUrl);
-      await loadItems(currentUrl, showHidden);
+      await loadItems(currentUrl);
     } catch {
       showAlert("Delete failed.");
     } finally {
@@ -582,7 +498,7 @@ export default function DataManager({ webId }) {
       });
       if (url.endsWith("/")) await deleteContainer(url, { fetch: noCacheFetch });
       else await deleteFile(url, { fetch: noCacheFetch });
-      await loadItems(currentUrl, showHidden);
+      await loadItems(currentUrl);
     } catch {
       showAlert("Rename failed.");
     }
@@ -606,7 +522,7 @@ export default function DataManager({ webId }) {
           contentType: file.type || guessContentType(file.name),
           fetch: noCacheFetch,
         });
-        await loadItems(currentUrl, showHidden);
+        await loadItems(currentUrl);
       } catch {
         showAlert("Upload failed.");
       }
@@ -760,68 +676,9 @@ export default function DataManager({ webId }) {
           await deleteRecursive(url);
         }
       }
-      await loadItems(currentUrl, showHidden);
+      await loadItems(currentUrl);
     } catch {
       showAlert("Move/Copy failed.");
-    }
-  };
-
-  const handleBulkShare = async () => {
-    if (!bulkShareWebId.trim() || !bulkShareEnabled) return;
-    const urls = Array.from(selectedItems);
-    try {
-      for (const url of urls) {
-        const { resource, resourceAcl } = await getResourceAndAcl(url);
-        const updatedAcl = setAgentResourceAccess(resourceAcl, bulkShareWebId, {
-          read: true,
-          append: true,
-          write: true,
-          control: true,
-        });
-        await saveAclFor(resource, updatedAcl, { fetch: noCacheFetch });
-      }
-      setBulkShareOpen(false);
-      setBulkShareWebId("");
-      setBulkShareEnabled(false);
-    } catch {
-      showAlert("Bulk share failed.");
-    }
-  };
-
-  const handleBulkMoveCopy = async () => {
-    if (!bulkMoveCopyTarget.trim()) return;
-    await moveOrCopyItems(
-      Array.from(selectedItems),
-      bulkMoveCopyTarget.trim(),
-      bulkCopyMode
-    );
-    setBulkMoveCopyOpen(false);
-    setBulkMoveCopyTarget("");
-  };
-
-  const closeBulkShare = () => {
-    setBulkShareOpen(false);
-    setBulkShareWebId("");
-    setBulkShareEnabled(false);
-  };
-
-  const closeBulkMoveCopy = () => {
-    setBulkMoveCopyOpen(false);
-    setBulkMoveCopyTarget("");
-  };
-
-  const handleBulkDelete = async () => {
-    try {
-      for (const url of selectedItems) {
-        await deleteRecursive(url);
-      }
-      setSelectedItems(new Set());
-      lastSelectedIndexRef.current = null;
-      await loadItems(currentUrl, showHidden);
-    } catch {
-      showAlert("Bulk delete failed.");
-    } finally {
-      setBulkDeleteConfirm(false);
     }
   };
 
@@ -832,142 +689,25 @@ export default function DataManager({ webId }) {
       nameLower.endsWith(".acl") ||
       nameLower.endsWith(".acr") ||
       nameLower.endsWith(".meta");
-    if (!showHidden && isHidden) return false;
-    if (!showTtl && nameLower.endsWith(".ttl")) return false;
+    if (isHidden) return false;
     if (searchQuery && !nameLower.includes(searchQuery.toLowerCase())) return false;
-
-    if (typeFilter === "all") return true;
-    if (typeFilter === "folders") return item.isFolder;
-    if (typeFilter === "files") return !item.isFolder;
-    const type = getItemType(item).toLowerCase();
-    return type === typeFilter;
+    return true;
   });
 
   const sortedItems = filteredItems.slice().sort((a, b) => {
     if (a.isFolder && !b.isFolder) return -1;
     if (!a.isFolder && b.isFolder) return 1;
-    let result = 0;
-    if (sortBy === "name") {
-      result = a.name.toLowerCase().localeCompare(b.name.toLowerCase());
-    } else if (sortBy === "modified") {
-      const aTime = a.lastModified ? new Date(a.lastModified).getTime() : 0;
-      const bTime = b.lastModified ? new Date(b.lastModified).getTime() : 0;
-      result = aTime - bTime;
-    } else if (sortBy === "size") {
-      const aSize = a.size ?? -1;
-      const bSize = b.size ?? -1;
-      result = aSize - bSize;
-    }
-    return sortDir === "asc" ? result : -result;
+    return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
   });
-
-  const selectedCount = Array.from(selectedItems).length;
 
   return (
     <>
       <TopHeader />
-      <div className={`data-manager-layout ${previewItem ? "" : "data-manager-layout--full"}`}>
+      <div className="data-manager-layout">
         <div className="data-manager-main">
-          <div className="data-toolbar">
-            <div className="data-toolbar__left">
-              <div className="data-search">
-                <input
-                  type="text"
-                  placeholder="Search files..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              <div className="data-select">
-                <FontAwesomeIcon icon={faFilter} />
-                <select
-                  value={typeFilter}
-                  onChange={(e) => setTypeFilter(e.target.value)}
-                >
-                  <option value="all">All types</option>
-                  <option value="folders">Folders</option>
-                  <option value="files">Files</option>
-                  <option value="json">JSON</option>
-                  <option value="csv">CSV</option>
-                  <option value="ttl">TTL</option>
-                  <option value="image">Image</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-              <div className="data-select">
-                <FontAwesomeIcon icon={faSort} />
-                <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                  <option value="name">Sort by name</option>
-                  <option value="modified">Sort by modified</option>
-                  <option value="size">Sort by size</option>
-                </select>
-                <button
-                  className="pill-btn pill-btn--ghost"
-                  onClick={() => setSortDir(sortDir === "asc" ? "desc" : "asc")}
-                  title="Toggle sort direction"
-                >
-                  {sortDir === "asc" ? "Asc" : "Desc"}
-                </button>
-              </div>
-            </div>
-            <div className="data-toolbar__right">
-              <div className="storage-card">
-                <div className="storage-card__label">Current folder</div>
-                <div className="storage-card__value">
-                  {storageInfo.fileCount} files • {formatBytes(storageInfo.totalBytes)}
-                </div>
-                {storageInfo.totalBytes > 100 * 1024 * 1024 && (
-                  <div className="storage-card__warning">Large folder size</div>
-                )}
-              </div>
-              <div className="bulk-actions">
-                <span className="bulk-count">
-                  <FontAwesomeIcon icon={faLayerGroup} /> {selectedCount} selected
-                </span>
-                <button
-                  className="pill-btn"
-                  disabled={!selectedCount}
-                  onClick={() => setBulkShareOpen(true)}
-                >
-                  <FontAwesomeIcon icon={faShareNodes} /> Share
-                </button>
-                <button
-                  className="pill-btn"
-                  disabled={!selectedCount}
-                  onClick={() => {
-                    setBulkCopyMode(false);
-                    setBulkMoveCopyOpen(true);
-                  }}
-                >
-                  <FontAwesomeIcon icon={faChevronRight} /> Move
-                </button>
-                <button
-                  className="pill-btn"
-                  disabled={!selectedCount}
-                  onClick={() => {
-                    setBulkCopyMode(true);
-                    setBulkMoveCopyOpen(true);
-                  }}
-                >
-                  <FontAwesomeIcon icon={faCopy} /> Copy
-                </button>
-                <button
-                  className="pill-btn pill-btn--danger"
-                  disabled={!selectedCount}
-                  onClick={() => setBulkDeleteConfirm(true)}
-                >
-                  <FontAwesomeIcon icon={faTrash} /> Delete
-                </button>
-              </div>
-            </div>
-          </div>
           <FilesView
-            currentUrl={currentUrl}
             items={sortedItems}
             loading={loading}
-            showTtl={showTtl}
-            onShowTtlChange={setShowTtl}
-            createFolder={openCreateFolderModal}
             uploadFile={uploadFile}
             navigateTo={navigateTo}
             renameItem={openRenameModal}
@@ -975,26 +715,6 @@ export default function DataManager({ webId }) {
             downloadFile={downloadFile}
             shareItem={openShareModal}
             crumbs={computeCrumbs()}
-            showHidden={showHidden}
-            onShowHiddenChange={(next) => {
-              setShowHidden(next);
-              loadItems(currentUrl, next);
-            }}
-            selectedItems={selectedItems}
-            onToggleSelect={(url) => {
-              setSelectedItems((prev) => {
-                const next = new Set(prev);
-                if (next.has(url)) next.delete(url);
-                else next.add(url);
-                return next;
-              });
-            }}
-            onToggleSelectAll={() => {
-              setSelectedItems((prev) => {
-                if (prev.size === sortedItems.length) return new Set();
-                return new Set(sortedItems.map((item) => item.url));
-              });
-            }}
             onRowPreview={(item) => {
               setPreviewItem(item);
             }}
@@ -1050,28 +770,11 @@ export default function DataManager({ webId }) {
               const copyMode = event.ctrlKey || event.altKey;
               await moveOrCopyItems(urls, folderUrl, copyMode);
             }}
+            searchQuery={searchQuery}
+            onSearchQueryChange={setSearchQuery}
+            selectedItems={selectedItems}
           />
         </div>
-        {previewItem && (
-          <div className="preview-panel">
-            <div className="preview-panel__header">
-              <FontAwesomeIcon icon={faEye} />
-              <span>Preview</span>
-            </div>
-            <div className="preview-panel__meta">
-              <div><strong>Name:</strong> {previewItem.name}</div>
-              <div><strong>Type:</strong> {getItemType(previewItem)}</div>
-              <div><strong>Size:</strong> {formatBytes(previewItem.size)}</div>
-            </div>
-            <div className="preview-panel__body">
-              {previewLoading ? (
-                <div className="preview-loading">Loading preview...</div>
-              ) : (
-                <pre className="preview-code">{previewContent || "No preview available."}</pre>
-              )}
-            </div>
-          </div>
-        )}
       </div>
       <CreateFolderModal
         show={folderModalOpen}
@@ -1112,21 +815,61 @@ export default function DataManager({ webId }) {
         message={alertMessage}
         onClose={() => setAlertOpen(false)}
       />
-      <ConfirmModal
-        show={bulkDeleteConfirm}
-        title="Delete selected items?"
-        message="This will permanently delete all selected items."
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
-        onClose={() => setBulkDeleteConfirm(false)}
-        onConfirm={handleBulkDelete}
-      />
+      {previewItem && (
+        <div
+          className="modal-overlay"
+          onClick={() => {
+            setPreviewItem(null);
+            setPreviewContent("");
+          }}
+        >
+          <div
+            className="modal-box preview-modal"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="modal-header">
+              <span className="modal-title">Preview</span>
+              <button
+                className="modal-close"
+                onClick={() => {
+                  setPreviewItem(null);
+                  setPreviewContent("");
+                }}
+                aria-label="Close"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="preview-meta">
+                <div><strong>Name:</strong> {previewItem.name}</div>
+                <div><strong>Type:</strong> {getItemType(previewItem)}</div>
+                <div><strong>Size:</strong> {formatBytes(previewItem.size)}</div>
+              </div>
+              {previewLoading ? (
+                <div className="preview-loading">Loading preview...</div>
+              ) : (
+                <pre className="preview-code">{previewContent || "No preview available."}</pre>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       {contextMenu && (
         <div
           className="context-menu"
           style={{ top: contextMenu.y, left: contextMenu.x }}
           onMouseLeave={() => setContextMenu(null)}
         >
+          <button
+            type="button"
+            onClick={() => {
+              setContextMenu(null);
+              setFolderModalOpen(true);
+            }}
+          >
+            New folder
+          </button>
           <button
             type="button"
             onClick={() => {
@@ -1160,8 +903,12 @@ export default function DataManager({ webId }) {
             type="button"
             onClick={() => {
               setContextMenu(null);
-              setBulkCopyMode(false);
-              setBulkMoveCopyOpen(true);
+              const urls = selectedItems.has(contextMenu.item.url)
+                ? Array.from(selectedItems)
+                : [contextMenu.item.url];
+              setMoveCopyMode(false);
+              setMoveCopySources(urls);
+              setMoveCopyOpen(true);
             }}
           >
             Move
@@ -1170,8 +917,12 @@ export default function DataManager({ webId }) {
             type="button"
             onClick={() => {
               setContextMenu(null);
-              setBulkCopyMode(true);
-              setBulkMoveCopyOpen(true);
+              const urls = selectedItems.has(contextMenu.item.url)
+                ? Array.from(selectedItems)
+                : [contextMenu.item.url];
+              setMoveCopyMode(true);
+              setMoveCopySources(urls);
+              setMoveCopyOpen(true);
             }}
           >
             Copy
@@ -1188,63 +939,21 @@ export default function DataManager({ webId }) {
           </button>
         </div>
       )}
-      {bulkShareOpen && (
-        <div className="modal-overlay">
-          <div className="modal-box">
-            <div className="modal-header">
-              <span className="modal-title">Bulk Share</span>
-              <button className="modal-close" onClick={closeBulkShare}>
-                &times;
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label className="modal-label">WebID</label>
-                <input
-                  className="modal-input"
-                  type="text"
-                  value={bulkShareWebId}
-                  onChange={(e) => setBulkShareWebId(e.target.value)}
-                  placeholder="https://user.example/profile#me"
-                />
-              </div>
-              <div className="form-group" style={{ marginTop: "1rem" }}>
-                <span className="modal-label">Access</span>
-                <div className="modal-checkboxes">
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={bulkShareEnabled}
-                      onChange={(e) => setBulkShareEnabled(e.target.checked)}
-                    />
-                    Access
-                  </label>
-                </div>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={closeBulkShare}>
-                Cancel
-              </button>
-              <button
-                className="btn btn-primary"
-                onClick={handleBulkShare}
-                disabled={!bulkShareWebId.trim() || !bulkShareEnabled}
-              >
-                Share
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {bulkMoveCopyOpen && (
+      {moveCopyOpen && (
         <div className="modal-overlay">
           <div className="modal-box">
             <div className="modal-header">
               <span className="modal-title">
-                {bulkCopyMode ? "Copy items" : "Move items"}
+                {moveCopyMode ? "Copy item" : "Move item"}
               </span>
-              <button className="modal-close" onClick={closeBulkMoveCopy}>
+              <button
+                className="modal-close"
+                onClick={() => {
+                  setMoveCopyOpen(false);
+                  setMoveCopyTarget("");
+                  setMoveCopySources([]);
+                }}
+              >
                 &times;
               </button>
             </div>
@@ -1254,22 +963,35 @@ export default function DataManager({ webId }) {
                 <input
                   className="modal-input"
                   type="text"
-                  value={bulkMoveCopyTarget}
-                  onChange={(e) => setBulkMoveCopyTarget(e.target.value)}
+                  value={moveCopyTarget}
+                  onChange={(e) => setMoveCopyTarget(e.target.value)}
                   placeholder="https://pod.example/storage/folder/"
                 />
               </div>
             </div>
             <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={closeBulkMoveCopy}>
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  setMoveCopyOpen(false);
+                  setMoveCopyTarget("");
+                  setMoveCopySources([]);
+                }}
+              >
                 Cancel
               </button>
               <button
                 className="btn btn-primary"
-                onClick={handleBulkMoveCopy}
-                disabled={!bulkMoveCopyTarget.trim()}
+                onClick={async () => {
+                  if (!moveCopySources.length || !moveCopyTarget.trim()) return;
+                  await moveOrCopyItems(moveCopySources, moveCopyTarget.trim(), moveCopyMode);
+                  setMoveCopyOpen(false);
+                  setMoveCopyTarget("");
+                  setMoveCopySources([]);
+                }}
+                disabled={!moveCopyTarget.trim()}
               >
-                {bulkCopyMode ? "Copy" : "Move"}
+                {moveCopyMode ? "Copy" : "Move"}
               </button>
             </div>
           </div>
