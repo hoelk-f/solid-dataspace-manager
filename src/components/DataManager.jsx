@@ -94,9 +94,10 @@ function FilesView({
   downloadFile,
   shareItem,
   crumbs,
+  showHidden,
+  onShowHiddenChange,
 }) {
   const [hideTtl, setHideTtl] = useState(true);
-  const [showHidden, setShowHidden] = useState(false);
   const visibleItems = items
     .filter((item) => {
       const name = decodeURIComponent(
@@ -159,7 +160,7 @@ function FilesView({
             <input
               type="checkbox"
               checked={showHidden}
-              onChange={(e) => setShowHidden(e.target.checked)}
+              onChange={(e) => onShowHiddenChange(e.target.checked)}
               aria-label="Show hidden files"
             />
             <span>Show Hidden</span>
@@ -281,6 +282,7 @@ export default function DataManager({ webId }) {
   const [currentUrl, setCurrentUrl] = useState("");
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showHidden, setShowHidden] = useState(false);
   const rootUrlRef = useRef("");
 
   useEffect(() => {
@@ -293,7 +295,7 @@ export default function DataManager({ webId }) {
     const rootUrl = `${url.origin}${basePath}`;
     rootUrlRef.current = rootUrl;
     setCurrentUrl(rootUrl);
-    loadItems(rootUrl);
+    loadItems(rootUrl, showHidden);
   }, [webId]);
 
   useEffect(() => {
@@ -314,7 +316,7 @@ export default function DataManager({ webId }) {
         } catch {}
       });
       await Promise.all(uploadPromises);
-      loadItems(currentUrl);
+      loadItems(currentUrl, showHidden);
     };
     ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) =>
       window.addEventListener(eventName, preventDefaults, false)
@@ -328,13 +330,34 @@ export default function DataManager({ webId }) {
     };
   }, [currentUrl]);
 
-  const loadItems = async (url) => {
+  const loadItems = async (url, includeHidden) => {
     try {
       setLoading(true);
       const dataset = await getSolidDataset(url, { fetch: noCacheFetch });
       const containedUrls = getContainedResourceUrlAll(dataset);
+      let allUrls = [...containedUrls];
+
+      if (includeHidden) {
+        const hiddenSuffixes = [".acl", ".acr", ".meta"];
+        const candidateUrls = [url, ...containedUrls];
+        for (const baseUrl of candidateUrls) {
+          for (const suffix of hiddenSuffixes) {
+            const hiddenUrl = `${baseUrl}${suffix}`;
+            try {
+              const res = await noCacheFetch(hiddenUrl, { method: "HEAD" });
+              if (res.ok) {
+                allUrls.push(hiddenUrl);
+              }
+            } catch {
+              // Ignore missing hidden resources.
+            }
+          }
+        }
+      }
+
+      allUrls = Array.from(new Set(allUrls));
       const itemInfos = await Promise.all(
-        containedUrls.map(async (itemUrl) => {
+        allUrls.map(async (itemUrl) => {
           try {
             const res = await noCacheFetch(itemUrl, { method: "HEAD" });
             return {
@@ -355,7 +378,7 @@ export default function DataManager({ webId }) {
   const navigateTo = (url) => {
     const nextUrl = url.endsWith("/") ? url : url + "/";
     setCurrentUrl(nextUrl);
-    loadItems(nextUrl);
+    loadItems(nextUrl, showHidden);
   };
 
   const computeCrumbs = () => {
@@ -398,7 +421,7 @@ export default function DataManager({ webId }) {
     const folderUrl = currentUrl + name + "/";
     try {
       await createContainerAt(folderUrl, { fetch: noCacheFetch });
-      await loadItems(currentUrl);
+      await loadItems(currentUrl, showHidden);
     } catch {
       showAlert("Failed to create folder.");
     }
@@ -428,7 +451,7 @@ export default function DataManager({ webId }) {
     if (!deleteTargetUrl) return;
     try {
       await deleteRecursive(deleteTargetUrl);
-      await loadItems(currentUrl);
+      await loadItems(currentUrl, showHidden);
     } catch {
       showAlert("Delete failed.");
     } finally {
@@ -456,7 +479,7 @@ export default function DataManager({ webId }) {
       });
       if (url.endsWith("/")) await deleteContainer(url, { fetch: noCacheFetch });
       else await deleteFile(url, { fetch: noCacheFetch });
-      await loadItems(currentUrl);
+      await loadItems(currentUrl, showHidden);
     } catch {
       showAlert("Rename failed.");
     }
@@ -480,7 +503,7 @@ export default function DataManager({ webId }) {
           contentType: file.type || guessContentType(file.name),
           fetch: noCacheFetch,
         });
-        await loadItems(currentUrl);
+        await loadItems(currentUrl, showHidden);
       } catch {
         showAlert("Upload failed.");
       }
@@ -582,6 +605,11 @@ export default function DataManager({ webId }) {
         downloadFile={downloadFile}
         shareItem={openShareModal}
         crumbs={computeCrumbs()}
+        showHidden={showHidden}
+        onShowHiddenChange={(next) => {
+          setShowHidden(next);
+          loadItems(currentUrl, next);
+        }}
       />
       <CreateFolderModal
         show={folderModalOpen}
