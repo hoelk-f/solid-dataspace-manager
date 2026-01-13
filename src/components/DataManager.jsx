@@ -251,7 +251,9 @@ function FilesView({
                         if (event.target.closest("button") || event.target.closest("input")) {
                           return;
                         }
-                        if (!isFolder) onRowPreview(item);
+                        if (!isFolder) {
+                          onRowPreview(item);
+                        }
                       }}
                     >
                       <td>
@@ -355,6 +357,7 @@ export default function DataManager({ webId }) {
   const [previewItem, setPreviewItem] = useState(null);
   const [previewContent, setPreviewContent] = useState("");
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [bulkShareOpen, setBulkShareOpen] = useState(false);
   const [bulkShareWebId, setBulkShareWebId] = useState("");
   const [bulkShareEnabled, setBulkShareEnabled] = useState(false);
@@ -1018,7 +1021,10 @@ export default function DataManager({ webId }) {
                 return new Set(sortedItems.map((item) => item.url));
               });
             }}
-            onRowPreview={(item) => setPreviewItem(item)}
+            onRowPreview={(item) => {
+              setPreviewItem(item);
+              setPreviewOpen(true);
+            }}
             onDragStartRow={(item, event) => {
               const urls = selectedItems.has(item.url)
                 ? Array.from(selectedItems)
@@ -1035,29 +1041,6 @@ export default function DataManager({ webId }) {
             }}
             accessMap={accessMap}
           />
-        </div>
-        <div className="preview-panel">
-          <div className="preview-panel__header">
-            <div>
-              <FontAwesomeIcon icon={faEye} /> Preview
-            </div>
-          </div>
-          {previewItem ? (
-            <div className="preview-panel__body">
-              <div className="preview-meta">
-                <div><strong>Name:</strong> {previewItem.name}</div>
-                <div><strong>Type:</strong> {getItemType(previewItem)}</div>
-                <div><strong>Size:</strong> {formatBytes(previewItem.size)}</div>
-              </div>
-              {previewLoading ? (
-                <div className="preview-loading">Loading preview...</div>
-              ) : (
-                <pre className="preview-code">{previewContent || "No preview available."}</pre>
-              )}
-            </div>
-          ) : (
-            <div className="preview-panel__empty">Select a file to preview.</div>
-          )}
         </div>
       </div>
       <CreateFolderModal
@@ -1108,6 +1091,38 @@ export default function DataManager({ webId }) {
         onClose={() => setBulkDeleteConfirm(false)}
         onConfirm={handleBulkDelete}
       />
+      {previewOpen && previewItem && (
+        <div className="modal-overlay">
+          <div className="modal-box preview-modal">
+            <div className="modal-header">
+              <span className="modal-title">Preview</span>
+              <button
+                className="modal-close"
+                onClick={() => {
+                  setPreviewOpen(false);
+                  setPreviewItem(null);
+                  setPreviewContent("");
+                }}
+                aria-label="Close"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="preview-meta">
+                <div><strong>Name:</strong> {previewItem.name}</div>
+                <div><strong>Type:</strong> {getItemType(previewItem)}</div>
+                <div><strong>Size:</strong> {formatBytes(previewItem.size)}</div>
+              </div>
+              {previewLoading ? (
+                <div className="preview-loading">Loading preview...</div>
+              ) : (
+                <pre className="preview-code">{previewContent || "No preview available."}</pre>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       {bulkShareOpen && (
         <div className="modal-overlay">
           <div className="modal-box">
