@@ -97,7 +97,7 @@ function FilesView({
   showHidden,
   onShowHiddenChange,
 }) {
-  const [hideTtl, setHideTtl] = useState(true);
+  const [showTtl, setShowTtl] = useState(false);
   const visibleItems = items
     .filter((item) => {
       const name = decodeURIComponent(
@@ -109,7 +109,7 @@ function FilesView({
         name.endsWith(".acr") ||
         name.endsWith(".meta");
       if (!showHidden && isHidden) return false;
-      if (hideTtl && name.endsWith(".ttl")) return false;
+      if (!showTtl && name.endsWith(".ttl")) return false;
       return true;
     })
     .slice()
@@ -167,16 +167,16 @@ function FilesView({
           </label>
           <label
             className="pill-checkbox"
-            title="Hide Semantic Model files"
+            title="Show .TTL files"
             style={{ display: "flex", alignItems: "center", gap: 8, marginRight: 8 }}
           >
             <input
               type="checkbox"
-              checked={hideTtl}
-              onChange={(e) => setHideTtl(e.target.checked)}
-              aria-label="Hide .ttl files"
+              checked={showTtl}
+              onChange={(e) => setShowTtl(e.target.checked)}
+              aria-label="Show .ttl files"
             />
-            <span>Hide Semantic Model</span>
+            <span>Show .TTL files</span>
           </label>
           <button onClick={createFolder} className="pill-btn" title="Create new folder">
             <FontAwesomeIcon icon={faPlus} /> <span>Folder</span>

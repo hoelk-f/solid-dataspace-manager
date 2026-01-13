@@ -22,6 +22,9 @@ import {
   createAclFromFallbackAcl,
   setPublicResourceAccess,
   saveAclFor,
+  getContainedResourceUrlAll,
+  deleteFile,
+  deleteContainer,
 } from "@inrupt/solid-client";
 import session from "../solidSession";
 import { VCARD, FOAF, LDP } from "@inrupt/vocab-common-rdf";
@@ -151,6 +154,8 @@ export default function Profile({ webId }) {
   const [editContact, setEditContact] = useState(false);
   const [inboxUrl, setInboxUrl] = useState("");
   const [inboxConfiguring, setInboxConfiguring] = useState(false);
+  const [inboxResetting, setInboxResetting] = useState(false);
+  const [showInboxResetConfirm, setShowInboxResetConfirm] = useState(false);
   const [catalogUrl, setCatalogUrl] = useState("");
   const [catalogConfiguring, setCatalogConfiguring] = useState(false);
   const [catalogResetting, setCatalogResetting] = useState(false);
@@ -385,6 +390,42 @@ export default function Profile({ webId }) {
     }
   };
 
+  const deleteInboxContents = async (url) => {
+    try {
+      const dataset = await getSolidDataset(url, { fetch: session.fetch });
+      const resources = getContainedResourceUrlAll(dataset);
+      for (const resourceUrl of resources) {
+        if (resourceUrl.endsWith("/")) {
+          await deleteInboxContents(resourceUrl);
+          await deleteContainer(resourceUrl, { fetch: session.fetch });
+        } else {
+          await deleteFile(resourceUrl, { fetch: session.fetch });
+        }
+      }
+    } catch {
+      // Ignore missing inbox content.
+    }
+  };
+
+  const resetInbox = async () => {
+    if (!webId) return;
+    try {
+      setInboxResetting(true);
+      if (inboxUrl) {
+        await deleteInboxContents(inboxUrl);
+        await deleteContainer(inboxUrl, { fetch: session.fetch });
+      }
+      await configureInbox();
+      showAlert("Inbox reset completed.");
+    } catch (err) {
+      console.error("Inbox reset failed:", err);
+      showAlert(err?.message || "Inbox reset failed.");
+    } finally {
+      setInboxResetting(false);
+      setShowInboxResetConfirm(false);
+    }
+  };
+
   const configureCatalog = async () => {
     if (!webId) return;
     try {
@@ -544,6 +585,14 @@ export default function Profile({ webId }) {
                   ? "Reconfigure Inbox"
                   : "Configure Inbox"}
             </button>
+            <button
+              type="button"
+              className="pf-btn ghost"
+              onClick={() => setShowInboxResetConfirm(true)}
+              disabled={inboxResetting}
+            >
+              {inboxResetting ? "Resetting..." : "Reset Inbox"}
+            </button>
           </div>
         </div>
       </div>
@@ -606,6 +655,15 @@ export default function Profile({ webId }) {
         show={alertOpen}
         message={alertMessage}
         onClose={() => setAlertOpen(false)}
+      />
+      <ConfirmModal
+        show={showInboxResetConfirm}
+        title="Reset inbox?"
+        message="This will delete all inbox notifications and recreate a fresh inbox container."
+        confirmLabel="Reset Inbox"
+        cancelLabel="Cancel"
+        onClose={() => setShowInboxResetConfirm(false)}
+        onConfirm={resetInbox}
       />
       <ConfirmModal
         show={showCatalogResetConfirm}
