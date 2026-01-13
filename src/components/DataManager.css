@@ -9,6 +9,13 @@
   box-shadow: var(--shadow);
 }
 
+.file-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--primary-ghost);
+}
+
 .file-table thead {
   background: var(--primary-ghost);
 }
@@ -25,6 +32,10 @@
   text-align: right;
   padding-left: 0;
   white-space: nowrap;
+}
+
+.th-check {
+  width: 40px;
 }
 
 .file-table td {
@@ -49,14 +60,25 @@
   background: #f5f8ff;
 }
 
+.file-table tr.row-selected {
+  background: #eef2ff;
+}
+
 .file-table th:first-child,
 .file-table td:first-child {
   width: 100%;
 }
 
-.file-table th:nth-child(2),
-.file-table td:nth-child(2) {
+.file-table th:nth-child(4),
+.file-table td:nth-child(4),
+.file-table th:nth-child(5),
+.file-table td:nth-child(5) {
   white-space: nowrap;
+}
+
+.file-table input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
 }
 
 .actions-cell {
@@ -64,6 +86,31 @@
   justify-content: flex-end;
   gap: .25rem;
   white-space: nowrap;
+}
+
+.access-pill {
+  display: inline-flex;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.access-public {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.access-shared {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.access-private {
+  background: #fee2e2;
+  color: #b91c1c;
 }
 
 .icon-btn {
@@ -111,5 +158,173 @@
   border: 1px solid var(--border);
   border-radius: 16px;
   background: var(--card);
+}
+
+.data-manager-layout {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 18px;
+  align-items: start;
+}
+
+.data-manager-main {
+  display: grid;
+  gap: 16px;
+}
+
+.data-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  box-shadow: var(--shadow);
+  align-items: center;
+}
+
+.data-toolbar__left,
+.data-toolbar__right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.data-search input {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px 12px;
+  min-width: 240px;
+  background: #f8fbff;
+}
+
+.data-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fbff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 6px 10px;
+  color: var(--text);
+}
+
+.data-select select {
+  border: none;
+  background: transparent;
+  font-weight: 600;
+}
+
+.pill-btn {
+  border-radius: 999px;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.pill-btn--ghost {
+  background: #f8fbff;
+}
+
+.pill-btn--danger {
+  border-color: #fca5a5;
+  color: #b91c1c;
+  background: #fff5f5;
+}
+
+.bulk-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bulk-count {
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.storage-card {
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: #0f172a;
+  color: #f8fafc;
+  min-width: 200px;
+}
+
+.storage-card__label {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.storage-card__value {
+  font-weight: 800;
+  margin-top: 4px;
+}
+
+.storage-card__warning {
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: #fbbf24;
+  font-weight: 700;
+}
+
+.preview-panel {
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+}
+
+.preview-panel__header {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  font-weight: 800;
+}
+
+.preview-panel__body,
+.preview-panel__empty {
+  padding: 12px 14px;
+  color: var(--muted);
+}
+
+.preview-meta {
+  display: grid;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+
+.preview-code {
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 12px;
+  border-radius: 12px;
+  max-height: 280px;
+  overflow: auto;
+  font-size: 0.82rem;
+}
+
+.preview-loading {
+  color: var(--muted);
+}
+
+@media (max-width: 1200px) {
+  .data-manager-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
