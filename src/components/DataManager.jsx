@@ -14,7 +14,6 @@ import {
   createAclFromFallbackAcl,
   setAgentResourceAccess,
   getAgentResourceAccessAll,
-  getPublicResourceAccess,
   saveAclFor,
 } from "@inrupt/solid-client";
 import session from "../solidSession";
@@ -137,7 +136,6 @@ function FilesView({
   onRowPreview,
   onDropOnFolder,
   onDragStartRow,
-  accessMap,
 }) {
   const visibleItems = items;
   return (
@@ -220,19 +218,12 @@ function FilesView({
                   <th>Type</th>
                   <th>Size</th>
                   <th>Last Modified</th>
-                  <th>Access</th>
                   <th className="th-actions">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {visibleItems.map((item) => {
                   const { url, lastModified, isFolder, name, size } = item;
-                  const accessInfo = accessMap[url] || {};
-                  const accessLabel = accessInfo.publicRead
-                    ? "Public"
-                    : accessInfo.sharedCount
-                      ? `Shared (${accessInfo.sharedCount})`
-                      : "Private";
                   return (
                     <tr
                       key={url}
@@ -286,11 +277,6 @@ function FilesView({
                               minute: "2-digit",
                             })
                           : "-"}
-                      </td>
-                      <td>
-                        <span className={`access-pill access-${accessLabel.toLowerCase()}`}>
-                          {accessLabel}
-                        </span>
                       </td>
                       <td className="actions-cell">
                         <button
@@ -353,7 +339,6 @@ export default function DataManager({ webId }) {
   const [sortBy, setSortBy] = useState("name");
   const [sortDir, setSortDir] = useState("asc");
   const [selectedItems, setSelectedItems] = useState(new Set());
-  const [accessMap, setAccessMap] = useState({});
   const [previewItem, setPreviewItem] = useState(null);
   const [previewContent, setPreviewContent] = useState("");
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -474,7 +459,6 @@ export default function DataManager({ webId }) {
         .reduce((sum, item) => sum + item.size, 0);
       const fileCount = itemInfos.filter((item) => !item.isFolder).length;
       setStorageInfo({ totalBytes, fileCount });
-      await loadAccessOverview(itemInfos);
     } catch {} finally {
       setLoading(false);
     }
@@ -618,30 +602,7 @@ export default function DataManager({ webId }) {
     input.click();
   };
 
-  const loadAccessOverview = async (itemInfos) => {
-    const next = {};
-    await Promise.all(
-      itemInfos.map(async (item) => {
-        if (item.isFolder) return;
-        try {
-          const { resourceAcl } = await getResourceAndAcl(item.url);
-          const publicAccess = getPublicResourceAccess(resourceAcl);
-          const agents = getAgentResourceAccessAll(resourceAcl);
-          const sharedCount = Object.entries(agents).filter(
-            ([agent, access]) =>
-              agent !== webId && Object.values(access).some((value) => value)
-          ).length;
-          next[item.url] = {
-            publicRead: Boolean(publicAccess?.read),
-            sharedCount,
-          };
-        } catch {
-          next[item.url] = { publicRead: false, sharedCount: 0 };
-        }
-      })
-    );
-    setAccessMap(next);
-  };
+  
 
   const downloadFile = async (fileUrl) => {
     try {
@@ -1039,8 +1000,7 @@ export default function DataManager({ webId }) {
               const copyMode = event.ctrlKey || event.altKey;
               await moveOrCopyItems(urls, folderUrl, copyMode);
             }}
-            accessMap={accessMap}
-          />
+      />
         </div>
       </div>
       <CreateFolderModal

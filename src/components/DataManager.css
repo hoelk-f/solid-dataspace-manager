@@ -1,6 +1,7 @@
 .file-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
   background: var(--card);
   font-size: .98rem;
   border: 1px solid var(--border);
@@ -22,7 +23,7 @@
 
 .file-table th {
   text-align: left;
-  padding: .55rem .8rem;
+  padding: .5rem .7rem;
   font-weight: 800;
   color: var(--text);
   border-bottom: 1px solid var(--border);
@@ -32,14 +33,15 @@
   text-align: right;
   padding-left: 0;
   white-space: nowrap;
+  width: 140px;
 }
 
 .th-check {
-  width: 40px;
+  width: 36px;
 }
 
 .file-table td {
-  padding: .6rem .8rem;
+  padding: .5rem .7rem;
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
 }
@@ -66,7 +68,16 @@
 
 .file-table th:nth-child(2),
 .file-table td:nth-child(2) {
-  width: 42%;
+  width: 38%;
+}
+
+.file-table th:nth-child(3),
+.file-table td:nth-child(3),
+.file-table th:nth-child(4),
+.file-table td:nth-child(4),
+.file-table th:nth-child(5),
+.file-table td:nth-child(5) {
+  width: 14%;
 }
 
 .file-table th:nth-child(4),
@@ -86,31 +97,6 @@
   justify-content: flex-end;
   gap: .25rem;
   white-space: nowrap;
-}
-
-.access-pill {
-  display: inline-flex;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  background: #e2e8f0;
-  color: #1e293b;
-}
-
-.access-public {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.access-shared {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-
-.access-private {
-  background: #fee2e2;
-  color: #b91c1c;
 }
 
 .icon-btn {
