@@ -153,22 +153,7 @@ const DecisionInbox = ({ webId }) => {
       const filtered = rawItems.filter(Boolean);
       filtered.sort((a, b) => getDecisionTime(b) - getDecisionTime(a));
 
-      const latestByKey = new Map();
-      filtered.forEach((item) => {
-        const key = buildDecisionKey(item);
-        if (!latestByKey.has(key)) {
-          latestByKey.set(key, item);
-          return;
-        }
-        const existing = latestByKey.get(key);
-        const existingTime = getDecisionTime(existing);
-        const itemTime = getDecisionTime(item);
-        if (itemTime >= existingTime) {
-          latestByKey.set(key, item);
-        }
-      });
-
-      setDecisions(Array.from(latestByKey.values()));
+      setDecisions(filtered);
       localStorage.setItem(LAST_SEEN_DECISIONS_KEY, new Date().toISOString());
     } catch (err) {
       console.error("Failed to load decisions:", err);
