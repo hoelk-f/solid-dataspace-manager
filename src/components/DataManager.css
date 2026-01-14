@@ -8,11 +8,14 @@
   box-shadow: 0 30px 60px rgba(15, 23, 42, 0.12);
   font-family: "SF Pro Text", "SF Pro Display", "Segoe UI", -apple-system,
     BlinkMacSystemFont, sans-serif;
+  height: calc(100vh - 220px);
 }
 
 .data-manager-main {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
+  height: 100%;
 }
 
 .data-manager-main .toolbar {
@@ -70,7 +73,8 @@
 }
 
 .file-table-container {
-  max-height: 65vh;
+  flex: 1;
+  min-height: 0;
   overflow: auto;
   border-radius: 22px;
   border: 1px solid #e2e8f0;

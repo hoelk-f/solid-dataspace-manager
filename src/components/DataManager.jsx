@@ -481,6 +481,7 @@ export default function DataManager({ webId }) {
   const isEditablePreview = (item) => {
     if (!item) return false;
     const ext = getExtension(item.name);
+    if (!ext) return true;
     return ["json", "csv", "txt", "ttl"].includes(ext);
   };
 
