@@ -121,7 +121,7 @@
 
 .file-table th:nth-child(1),
 .file-table td:nth-child(1) {
-  width: 44%;
+  width: 46%;
 }
 
 .file-table th:nth-child(2),
@@ -130,14 +130,8 @@
 .file-table td:nth-child(3),
 .file-table th:nth-child(4),
 .file-table td:nth-child(4) {
-  width: 14%;
+  width: 18%;
   white-space: nowrap;
-}
-
-.th-actions {
-  text-align: right;
-  white-space: nowrap;
-  width: 140px;
 }
 
 .file-icon {
@@ -150,13 +144,6 @@
 
 .file-icon.file {
   color: #0f172a;
-}
-
-.actions-cell {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.35rem;
-  white-space: nowrap;
 }
 
 .icon-btn {
@@ -193,6 +180,26 @@
 
 .icon-btn.share {
   color: #7c3aed;
+}
+
+.icon-btn--ghost {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: rgba(148, 163, 184, 0.35);
+  box-shadow: none;
+}
+
+.icon-btn--ghost:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 6px;
+  border-left: 1px solid rgba(148, 163, 184, 0.3);
 }
 
 .preview-modal {
@@ -248,6 +255,9 @@
   font-weight: 600;
   color: #0f172a;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .context-menu button:hover {

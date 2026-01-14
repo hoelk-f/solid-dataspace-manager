@@ -27,6 +27,8 @@ import {
   faDownload,
   faShareNodes,
   faChevronRight,
+  faEye,
+  faCopy,
 } from "@fortawesome/free-solid-svg-icons";
 import "./DataManager.css";
 import CreateFolderModal from "./CreateFolderModal";
@@ -112,12 +114,7 @@ function FilesView({
   loading,
   uploadFile,
   navigateTo,
-  renameItem,
-  deleteItem,
-  downloadFile,
-  shareItem,
   crumbs,
-  onRowPreview,
   onRowSelect,
   onRowContextMenu,
   onDropOnFolder,
@@ -125,6 +122,9 @@ function FilesView({
   searchQuery,
   onSearchQueryChange,
   selectedItems,
+  onNewFolder,
+  onNewFile,
+  onHeaderAction,
 }) {
   const visibleItems = items;
   return (
@@ -153,6 +153,12 @@ function FilesView({
           ))}
         </div>
         <div className="primary-actions">
+          <button onClick={onNewFolder} className="pill-btn" title="New folder">
+            <FontAwesomeIcon icon={faFolder} /> <span>New folder</span>
+          </button>
+          <button onClick={onNewFile} className="pill-btn" title="New file">
+            <FontAwesomeIcon icon={faFile} /> <span>New file</span>
+          </button>
           <button onClick={uploadFile} className="pill-btn" title="Upload file">
             <FontAwesomeIcon icon={faUpload} /> <span>Upload</span>
           </button>
@@ -163,6 +169,48 @@ function FilesView({
               value={searchQuery}
               onChange={(e) => onSearchQueryChange(e.target.value)}
             />
+          </div>
+          <div className="header-actions">
+            <button
+              className="icon-btn icon-btn--ghost"
+              title="Preview"
+              onClick={() => onHeaderAction("preview")}
+              disabled={selectedItems.size === 0}
+            >
+              <FontAwesomeIcon icon={faEye} />
+            </button>
+            <button
+              className="icon-btn icon-btn--ghost"
+              title="Rename"
+              onClick={() => onHeaderAction("rename")}
+              disabled={selectedItems.size === 0}
+            >
+              <FontAwesomeIcon icon={faPen} />
+            </button>
+            <button
+              className="icon-btn icon-btn--ghost"
+              title="Download"
+              onClick={() => onHeaderAction("download")}
+              disabled={selectedItems.size === 0}
+            >
+              <FontAwesomeIcon icon={faDownload} />
+            </button>
+            <button
+              className="icon-btn icon-btn--ghost"
+              title="Share"
+              onClick={() => onHeaderAction("share")}
+              disabled={selectedItems.size === 0}
+            >
+              <FontAwesomeIcon icon={faShareNodes} />
+            </button>
+            <button
+              className="icon-btn icon-btn--ghost"
+              title="Delete"
+              onClick={() => onHeaderAction("delete")}
+              disabled={selectedItems.size === 0}
+            >
+              <FontAwesomeIcon icon={faTrash} />
+            </button>
           </div>
         </div>
       </div>
@@ -178,7 +226,6 @@ function FilesView({
                   <th>Type</th>
                   <th>Size</th>
                   <th>Last Modified</th>
-                  <th className="th-actions">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -204,7 +251,6 @@ function FilesView({
                           return;
                         }
                         onRowSelect(item, index, event);
-                        if (!isFolder) onRowPreview(item);
                       }}
                     >
                       <td
@@ -229,44 +275,6 @@ function FilesView({
                               minute: "2-digit",
                             })
                           : "-"}
-                      </td>
-                      <td className="actions-cell">
-                        <button
-                          onClick={() => renameItem(url)}
-                          className="icon-btn edit"
-                          title="Rename"
-                          aria-label="Rename"
-                        >
-                          <FontAwesomeIcon icon={faPen} />
-                        </button>
-                        {!isFolder && (
-                          <button
-                            onClick={() => downloadFile(url)}
-                            className="icon-btn download"
-                            title="Download"
-                            aria-label="Download"
-                          >
-                            <FontAwesomeIcon icon={faDownload} />
-                          </button>
-                        )}
-                        {!isFolder && (
-                          <button
-                            onClick={() => shareItem(url)}
-                            className="icon-btn share"
-                            title="Share"
-                            aria-label="Share"
-                          >
-                            <FontAwesomeIcon icon={faShareNodes} />
-                          </button>
-                        )}
-                        <button
-                          onClick={() => deleteItem(url)}
-                          className="icon-btn delete"
-                          title="Delete"
-                          aria-label="Delete"
-                        >
-                          <FontAwesomeIcon icon={faTrash} />
-                        </button>
                       </td>
                     </tr>
                   );
@@ -424,6 +432,8 @@ export default function DataManager({ webId }) {
   const [renameModalOpen, setRenameModalOpen] = useState(false);
   const [renameTargetUrl, setRenameTargetUrl] = useState("");
   const [renameCurrentName, setRenameCurrentName] = useState("");
+  const [newFileOpen, setNewFileOpen] = useState(false);
+  const [newFileName, setNewFileName] = useState("");
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteTargetUrl, setDeleteTargetUrl] = useState("");
@@ -443,6 +453,25 @@ export default function DataManager({ webId }) {
       await loadItems(currentUrl);
     } catch {
       showAlert("Failed to create folder.");
+    }
+  };
+
+  const handleCreateFile = async () => {
+    const name = newFileName.trim();
+    if (!name) return;
+    const fileUrl = currentUrl + name;
+    try {
+      const blob = new Blob([""], { type: guessContentType(name, "text/plain") });
+      await overwriteFile(fileUrl, blob, {
+        contentType: blob.type,
+        fetch: noCacheFetch,
+      });
+      await loadItems(currentUrl);
+    } catch {
+      showAlert("Failed to create file.");
+    } finally {
+      setNewFileOpen(false);
+      setNewFileName("");
     }
   };
 
@@ -710,14 +739,7 @@ export default function DataManager({ webId }) {
             loading={loading}
             uploadFile={uploadFile}
             navigateTo={navigateTo}
-            renameItem={openRenameModal}
-            deleteItem={openDeleteModal}
-            downloadFile={downloadFile}
-            shareItem={openShareModal}
             crumbs={computeCrumbs()}
-            onRowPreview={(item) => {
-              setPreviewItem(item);
-            }}
             onRowSelect={(item, index, event) => {
               const hasModifier = event.ctrlKey || event.metaKey;
               const isShift = event.shiftKey;
@@ -749,7 +771,6 @@ export default function DataManager({ webId }) {
                 next.add(item.url);
                 return next;
               });
-              setPreviewItem(item.isFolder ? null : item);
               setContextMenu({
                 x: event.clientX,
                 y: event.clientY,
@@ -773,6 +794,34 @@ export default function DataManager({ webId }) {
             searchQuery={searchQuery}
             onSearchQueryChange={setSearchQuery}
             selectedItems={selectedItems}
+            onNewFolder={() => setFolderModalOpen(true)}
+            onNewFile={() => setNewFileOpen(true)}
+            onHeaderAction={(action) => {
+              const selected = Array.from(selectedItems);
+              const primary = selected.length ? selected[0] : null;
+              if (!primary) return;
+              const item = sortedItems.find((entry) => entry.url === primary);
+              if (!item) return;
+              if (action === "preview") {
+                if (!item.isFolder) setPreviewItem(item);
+                return;
+              }
+              if (action === "rename") {
+                openRenameModal(item.url);
+                return;
+              }
+              if (action === "download") {
+                if (!item.isFolder) downloadFile(item.url);
+                return;
+              }
+              if (action === "share") {
+                openShareModal(item.url);
+                return;
+              }
+              if (action === "delete") {
+                openDeleteModal(item.url);
+              }
+            }}
           />
         </div>
       </div>
@@ -781,6 +830,51 @@ export default function DataManager({ webId }) {
         onClose={() => setFolderModalOpen(false)}
         onCreate={handleCreateFolder}
       />
+      {newFileOpen && (
+        <div className="modal-overlay">
+          <div className="modal-box">
+            <div className="modal-header">
+              <span className="modal-title">New file</span>
+              <button
+                className="modal-close"
+                onClick={() => {
+                  setNewFileOpen(false);
+                  setNewFileName("");
+                }}
+                aria-label="Close"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group">
+                <label className="modal-label">File name</label>
+                <input
+                  className="modal-input"
+                  type="text"
+                  value={newFileName}
+                  onChange={(e) => setNewFileName(e.target.value)}
+                  placeholder="example.txt"
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  setNewFileOpen(false);
+                  setNewFileName("");
+                }}
+              >
+                Cancel
+              </button>
+              <button className="btn btn-primary" onClick={handleCreateFile}>
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <ShareFileModal
         show={shareModalOpen}
         onClose={() => {
@@ -868,8 +962,28 @@ export default function DataManager({ webId }) {
               setFolderModalOpen(true);
             }}
           >
-            New folder
+            <FontAwesomeIcon icon={faFolder} /> New folder
           </button>
+          <button
+            type="button"
+            onClick={() => {
+              setContextMenu(null);
+              setNewFileOpen(true);
+            }}
+          >
+            <FontAwesomeIcon icon={faFile} /> New file
+          </button>
+          {!contextMenu.item.isFolder && (
+            <button
+              type="button"
+              onClick={() => {
+                setContextMenu(null);
+                setPreviewItem(contextMenu.item);
+              }}
+            >
+              <FontAwesomeIcon icon={faEye} /> Preview
+            </button>
+          )}
           <button
             type="button"
             onClick={() => {
@@ -877,7 +991,7 @@ export default function DataManager({ webId }) {
               openRenameModal(contextMenu.item.url);
             }}
           >
-            Rename
+            <FontAwesomeIcon icon={faPen} /> Rename
           </button>
           {!contextMenu.item.isFolder && (
             <button
@@ -887,7 +1001,7 @@ export default function DataManager({ webId }) {
                 downloadFile(contextMenu.item.url);
               }}
             >
-              Download
+              <FontAwesomeIcon icon={faDownload} /> Download
             </button>
           )}
           <button
@@ -897,7 +1011,7 @@ export default function DataManager({ webId }) {
               openShareModal(contextMenu.item.url);
             }}
           >
-            Share
+            <FontAwesomeIcon icon={faShareNodes} /> Share
           </button>
           <button
             type="button"
@@ -911,7 +1025,7 @@ export default function DataManager({ webId }) {
               setMoveCopyOpen(true);
             }}
           >
-            Move
+            <FontAwesomeIcon icon={faChevronRight} /> Move
           </button>
           <button
             type="button"
@@ -925,7 +1039,7 @@ export default function DataManager({ webId }) {
               setMoveCopyOpen(true);
             }}
           >
-            Copy
+            <FontAwesomeIcon icon={faCopy} /> Copy
           </button>
           <button
             type="button"
@@ -935,7 +1049,7 @@ export default function DataManager({ webId }) {
               openDeleteModal(contextMenu.item.url);
             }}
           >
-            Delete
+            <FontAwesomeIcon icon={faTrash} /> Delete
           </button>
         </div>
       )}
