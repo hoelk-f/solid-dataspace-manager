@@ -10,6 +10,7 @@ import LoginScreen from "./components/LoginScreen";
 import ProfilePage from "./components/ProfilePage";
 import Notifications from "./components/Notifications";
 import DecisionInbox from "./components/DecisionInbox";
+import TransactionHistory from "./components/TransactionHistory";
 import OnboardingWizard from "./components/OnboardingWizard";
 import { resolveCatalogUrl } from "./solidCatalog";
 
@@ -147,6 +148,7 @@ const App = () => {
           <div className="container">
             <Routes>
               <Route path="/" element={<DataManager webId={webId} />} />
+              <Route path="/transactions" element={<TransactionHistory webId={webId} />} />
               <Route path="/notifications" element={<Notifications webId={webId} />} />
               <Route path="/decisions" element={<DecisionInbox webId={webId} />} />
               <Route path="/profile" element={<ProfilePage webId={webId} />} />

@@ -13,7 +13,8 @@ import {
   faTemperatureHigh,
   faServer,
   faInbox,
-  faBell
+  faBell,
+  faChartLine
 } from "@fortawesome/free-solid-svg-icons";
 import session from "../solidSession";
 import {
@@ -159,6 +160,13 @@ function Sidebar({ webId }) {
         <Link to="/" className={"sb-link" + (isActive("/") ? " active" : "")}>
           <FontAwesomeIcon icon={faTableColumns} />
           <span>Data Manager</span>
+        </Link>
+        <Link
+          to="/transactions"
+          className={"sb-link" + (isActive("/transactions") ? " active" : "")}
+        >
+          <FontAwesomeIcon icon={faChartLine} />
+          <span>Transaction History</span>
         </Link>
         <Link
           to="/notifications"
