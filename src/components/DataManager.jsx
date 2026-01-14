@@ -496,6 +496,27 @@ export default function DataManager({ webId }) {
         fetch: noCacheFetch,
       });
       setPreviewContent(previewEditableContent);
+      const updatedModified = new Date().toUTCString();
+      setItems((prev) =>
+        prev.map((item) =>
+          item.url === previewItem.url
+            ? {
+                ...item,
+                size: blob.size,
+                lastModified: updatedModified,
+              }
+            : item
+        )
+      );
+      setPreviewItem((prev) =>
+        prev
+          ? {
+              ...prev,
+              size: blob.size,
+              lastModified: updatedModified,
+            }
+          : prev
+      );
       setPreviewEditMode(false);
     } catch {
       showAlert("Failed to save file changes.");

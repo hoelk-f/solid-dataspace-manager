@@ -10,7 +10,7 @@ import {
   faUser,
   faRightFromBracket,
   faInfo,
-  faFile,
+  faTemperatureHigh,
   faServer,
   faInbox,
   faBell
@@ -217,7 +217,7 @@ function Sidebar({ webId }) {
 
         <div className="sb-section">Applications</div>
         <Link to="/web/urban-heat-monitoring" className="sb-link">
-          <FontAwesomeIcon icon={faFile} />
+          <FontAwesomeIcon icon={faTemperatureHigh} />
           <span>Urban Heat Monitoring</span>
         </Link>
 
