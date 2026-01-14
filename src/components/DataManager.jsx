@@ -35,7 +35,7 @@ import CreateFolderModal from "./CreateFolderModal";
 import ShareFileModal from "./ShareFileModal";
 import RenameItemModal from "./RenameItemModal";
 import AlertModal from "./AlertModal";
-import DeleteConfirmModal from "./DeleteConfirmModal";
+import ConfirmModal from "./ConfirmModal";
 
 const noCacheFetch = (input, init = {}) =>
   session.fetch(input, {
@@ -153,23 +153,6 @@ function FilesView({
           ))}
         </div>
         <div className="primary-actions">
-          <button onClick={onNewFolder} className="pill-btn" title="New folder">
-            <FontAwesomeIcon icon={faFolder} /> <span>New folder</span>
-          </button>
-          <button onClick={onNewFile} className="pill-btn" title="New file">
-            <FontAwesomeIcon icon={faFile} /> <span>New file</span>
-          </button>
-          <button onClick={uploadFile} className="pill-btn" title="Upload file">
-            <FontAwesomeIcon icon={faUpload} /> <span>Upload</span>
-          </button>
-          <div className="data-search data-search--inline">
-            <input
-              type="text"
-              placeholder="Search files..."
-              value={searchQuery}
-              onChange={(e) => onSearchQueryChange(e.target.value)}
-            />
-          </div>
           <div className="header-actions">
             <button
               className="icon-btn icon-btn--ghost"
@@ -211,6 +194,23 @@ function FilesView({
             >
               <FontAwesomeIcon icon={faTrash} />
             </button>
+          </div>
+          <button onClick={onNewFolder} className="pill-btn" title="New folder">
+            <FontAwesomeIcon icon={faFolder} /> <span>New folder</span>
+          </button>
+          <button onClick={onNewFile} className="pill-btn" title="New file">
+            <FontAwesomeIcon icon={faFile} /> <span>New file</span>
+          </button>
+          <button onClick={uploadFile} className="pill-btn" title="Upload file">
+            <FontAwesomeIcon icon={faUpload} /> <span>Upload</span>
+          </button>
+          <div className="data-search data-search--inline">
+            <input
+              type="text"
+              placeholder="Search files..."
+              value={searchQuery}
+              onChange={(e) => onSearchQueryChange(e.target.value)}
+            />
           </div>
         </div>
       </div>
@@ -297,6 +297,9 @@ export default function DataManager({ webId }) {
   const [previewItem, setPreviewItem] = useState(null);
   const [previewContent, setPreviewContent] = useState("");
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewEditMode, setPreviewEditMode] = useState(false);
+  const [previewEditableContent, setPreviewEditableContent] = useState("");
+  const [previewSaving, setPreviewSaving] = useState(false);
   const [contextMenu, setContextMenu] = useState(null);
   const [moveCopyOpen, setMoveCopyOpen] = useState(false);
   const [moveCopyTarget, setMoveCopyTarget] = useState("");
@@ -434,9 +437,9 @@ export default function DataManager({ webId }) {
   const [renameCurrentName, setRenameCurrentName] = useState("");
   const [newFileOpen, setNewFileOpen] = useState(false);
   const [newFileName, setNewFileName] = useState("");
-
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [deleteTargetUrl, setDeleteTargetUrl] = useState("");
+  const [shareTargets, setShareTargets] = useState([]);
+  const [bulkDeleteTargets, setBulkDeleteTargets] = useState([]);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
 
@@ -475,6 +478,31 @@ export default function DataManager({ webId }) {
     }
   };
 
+  const isEditablePreview = (item) => {
+    if (!item) return false;
+    const ext = getExtension(item.name);
+    return ["json", "csv", "txt", "ttl"].includes(ext);
+  };
+
+  const savePreviewEdits = async () => {
+    if (!previewItem || !isEditablePreview(previewItem)) return;
+    setPreviewSaving(true);
+    try {
+      const contentType = guessContentType(previewItem.name, "text/plain");
+      const blob = new Blob([previewEditableContent], { type: contentType });
+      await overwriteFile(previewItem.url, blob, {
+        contentType,
+        fetch: noCacheFetch,
+      });
+      setPreviewContent(previewEditableContent);
+      setPreviewEditMode(false);
+    } catch {
+      showAlert("Failed to save file changes.");
+    } finally {
+      setPreviewSaving(false);
+    }
+  };
+
   const deleteRecursive = async (url) => {
     if (url.endsWith("/")) {
       try {
@@ -490,21 +518,25 @@ export default function DataManager({ webId }) {
     }
   };
 
-  const openDeleteModal = (url) => {
-    setDeleteTargetUrl(url);
-    setDeleteModalOpen(true);
+  const openDeleteModal = (urls) => {
+    const targets = Array.isArray(urls) ? urls : [urls];
+    if (!targets.length) return;
+    setBulkDeleteTargets(targets);
+    setBulkDeleteOpen(true);
   };
 
   const handleDelete = async () => {
-    if (!deleteTargetUrl) return;
+    if (!bulkDeleteTargets.length) return;
     try {
-      await deleteRecursive(deleteTargetUrl);
+      for (const url of bulkDeleteTargets) {
+        await deleteRecursive(url);
+      }
       await loadItems(currentUrl);
     } catch {
       showAlert("Delete failed.");
     } finally {
-      setDeleteModalOpen(false);
-      setDeleteTargetUrl("");
+      setBulkDeleteOpen(false);
+      setBulkDeleteTargets([]);
     }
   };
 
@@ -576,6 +608,13 @@ export default function DataManager({ webId }) {
     }
   };
 
+  const downloadFiles = async (urls) => {
+    for (const url of urls) {
+      if (url.endsWith("/")) continue;
+      await downloadFile(url);
+    }
+  };
+
   const getResourceAndAcl = async (url) => {
     const resource = url.endsWith("/")
       ? await getSolidDatasetWithAcl(url, { fetch: noCacheFetch })
@@ -603,11 +642,15 @@ export default function DataManager({ webId }) {
     setShareAgents(agents);
   };
 
-  const openShareModal = async (url) => {
+  const openShareModal = async (urls) => {
+    const targets = Array.isArray(urls) ? urls : [urls];
+    const primary = targets[0];
+    if (!primary) return;
     try {
-      const { resourceAcl } = await getResourceAndAcl(url);
+      const { resourceAcl } = await getResourceAndAcl(primary);
       loadShareAgents(resourceAcl);
-      setShareTargetUrl(url);
+      setShareTargetUrl(primary);
+      setShareTargets(targets);
       setShareModalOpen(true);
     } catch {
       showAlert("Failed to load ACL.");
@@ -615,26 +658,34 @@ export default function DataManager({ webId }) {
   };
 
   const handleShareItem = async (webId, access) => {
-    const url = shareTargetUrl;
-    if (!url) return;
+    const targets = shareTargets.length ? shareTargets : shareTargetUrl ? [shareTargetUrl] : [];
+    if (!targets.length) return;
     try {
-      const { resource, resourceAcl } = await getResourceAndAcl(url);
-      const updatedAcl = setAgentResourceAccess(resourceAcl, webId, access);
-      await saveAclFor(resource, updatedAcl, { fetch: noCacheFetch });
-      loadShareAgents(updatedAcl);
+      for (const url of targets) {
+        const { resource, resourceAcl } = await getResourceAndAcl(url);
+        const updatedAcl = setAgentResourceAccess(resourceAcl, webId, access);
+        await saveAclFor(resource, updatedAcl, { fetch: noCacheFetch });
+        if (url === targets[0]) {
+          loadShareAgents(updatedAcl);
+        }
+      }
     } catch {
       showAlert("Sharing failed.");
     }
   };
 
   const handleRemoveShare = async (webId) => {
-    const url = shareTargetUrl;
-    if (!url) return;
+    const targets = shareTargets.length ? shareTargets : shareTargetUrl ? [shareTargetUrl] : [];
+    if (!targets.length) return;
     try {
-      const { resource, resourceAcl } = await getResourceAndAcl(url);
-      const updatedAcl = setAgentResourceAccess(resourceAcl, webId, {});
-      await saveAclFor(resource, updatedAcl, { fetch: noCacheFetch });
-      loadShareAgents(updatedAcl);
+      for (const url of targets) {
+        const { resource, resourceAcl } = await getResourceAndAcl(url);
+        const updatedAcl = setAgentResourceAccess(resourceAcl, webId, {});
+        await saveAclFor(resource, updatedAcl, { fetch: noCacheFetch });
+        if (url === targets[0]) {
+          loadShareAgents(updatedAcl);
+        }
+      }
     } catch {
       showAlert("Failed to remove access.");
     }
@@ -652,14 +703,19 @@ export default function DataManager({ webId }) {
         try {
           const parsed = JSON.parse(text);
           setPreviewContent(JSON.stringify(parsed, null, 2));
+          setPreviewEditableContent(JSON.stringify(parsed, null, 2));
         } catch {
           setPreviewContent(text.slice(0, 5000));
+          setPreviewEditableContent(text.slice(0, 5000));
         }
       } else {
         setPreviewContent(text.slice(0, 5000));
+        setPreviewEditableContent(text.slice(0, 5000));
       }
+      setPreviewEditMode(false);
     } catch {
       setPreviewContent("No preview available.");
+      setPreviewEditableContent("");
     } finally {
       setPreviewLoading(false);
     }
@@ -811,15 +867,15 @@ export default function DataManager({ webId }) {
                 return;
               }
               if (action === "download") {
-                if (!item.isFolder) downloadFile(item.url);
+                downloadFiles(selected);
                 return;
               }
               if (action === "share") {
-                openShareModal(item.url);
+                openShareModal(selected);
                 return;
               }
               if (action === "delete") {
-                openDeleteModal(item.url);
+                openDeleteModal(selected);
               }
             }}
           />
@@ -881,6 +937,7 @@ export default function DataManager({ webId }) {
           setShareModalOpen(false);
           setShareTargetUrl("");
           setShareAgents([]);
+          setShareTargets([]);
         }}
         onShare={handleShareItem}
         onRemove={handleRemoveShare}
@@ -896,11 +953,15 @@ export default function DataManager({ webId }) {
         onRename={handleRenameSubmit}
         currentName={renameCurrentName}
       />
-      <DeleteConfirmModal
-        show={deleteModalOpen}
+      <ConfirmModal
+        show={bulkDeleteOpen}
+        title="Delete selected items?"
+        message="This will permanently delete the selected items."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
         onClose={() => {
-          setDeleteModalOpen(false);
-          setDeleteTargetUrl("");
+          setBulkDeleteOpen(false);
+          setBulkDeleteTargets([]);
         }}
         onConfirm={handleDelete}
       />
@@ -915,6 +976,8 @@ export default function DataManager({ webId }) {
           onClick={() => {
             setPreviewItem(null);
             setPreviewContent("");
+            setPreviewEditableContent("");
+            setPreviewEditMode(false);
           }}
         >
           <div
@@ -928,6 +991,8 @@ export default function DataManager({ webId }) {
                 onClick={() => {
                   setPreviewItem(null);
                   setPreviewContent("");
+                  setPreviewEditableContent("");
+                  setPreviewEditMode(false);
                 }}
                 aria-label="Close"
               >
@@ -942,10 +1007,48 @@ export default function DataManager({ webId }) {
               </div>
               {previewLoading ? (
                 <div className="preview-loading">Loading preview...</div>
+              ) : previewEditMode ? (
+                <textarea
+                  className="preview-editor"
+                  value={previewEditableContent}
+                  onChange={(event) => setPreviewEditableContent(event.target.value)}
+                />
               ) : (
                 <pre className="preview-code">{previewContent || "No preview available."}</pre>
               )}
             </div>
+            {isEditablePreview(previewItem) && !previewLoading && (
+              <div className="modal-footer">
+                {previewEditMode ? (
+                  <>
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() => {
+                        setPreviewEditMode(false);
+                        setPreviewEditableContent(previewContent);
+                      }}
+                      disabled={previewSaving}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className="btn btn-primary"
+                      onClick={savePreviewEdits}
+                      disabled={previewSaving}
+                    >
+                      {previewSaving ? "Saving..." : "Save changes"}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => setPreviewEditMode(true)}
+                  >
+                    Edit file
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -953,7 +1056,6 @@ export default function DataManager({ webId }) {
         <div
           className="context-menu"
           style={{ top: contextMenu.y, left: contextMenu.x }}
-          onMouseLeave={() => setContextMenu(null)}
         >
           <button
             type="button"
@@ -998,7 +1100,10 @@ export default function DataManager({ webId }) {
               type="button"
               onClick={() => {
                 setContextMenu(null);
-                downloadFile(contextMenu.item.url);
+                const urls = selectedItems.has(contextMenu.item.url)
+                  ? Array.from(selectedItems)
+                  : [contextMenu.item.url];
+                downloadFiles(urls);
               }}
             >
               <FontAwesomeIcon icon={faDownload} /> Download
@@ -1008,7 +1113,10 @@ export default function DataManager({ webId }) {
             type="button"
             onClick={() => {
               setContextMenu(null);
-              openShareModal(contextMenu.item.url);
+              const urls = selectedItems.has(contextMenu.item.url)
+                ? Array.from(selectedItems)
+                : [contextMenu.item.url];
+              openShareModal(urls);
             }}
           >
             <FontAwesomeIcon icon={faShareNodes} /> Share
@@ -1046,7 +1154,10 @@ export default function DataManager({ webId }) {
             className="danger"
             onClick={() => {
               setContextMenu(null);
-              openDeleteModal(contextMenu.item.url);
+              const urls = selectedItems.has(contextMenu.item.url)
+                ? Array.from(selectedItems)
+                : [contextMenu.item.url];
+              openDeleteModal(urls);
             }}
           >
             <FontAwesomeIcon icon={faTrash} /> Delete
