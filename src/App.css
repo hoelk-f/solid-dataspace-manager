@@ -40,6 +40,14 @@ body {
   margin: .75rem 0 1rem;
 }
 
+.toolbar--title {
+  padding: 14px 18px;
+  border-radius: 18px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+}
+
 .crumb {
   display: flex;
   align-items: center;

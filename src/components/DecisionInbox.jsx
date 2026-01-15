@@ -255,7 +255,7 @@ const DecisionInbox = ({ webId }) => {
 
   return (
     <div className="notifications">
-      <div className="notifications-header">
+      <div className="notifications-header toolbar--title">
         <div className="crumb">
           <FontAwesomeIcon icon={faBell} className="crumb-icon" />
           <span>Access Decisions</span>

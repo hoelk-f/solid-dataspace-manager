@@ -8,7 +8,7 @@ export default function ProfilePage({ webId }) {
   const navigate = useNavigate();
   return (
     <>
-      <div className="toolbar">
+      <div className="toolbar toolbar--title">
         <div className="crumb">
           <FontAwesomeIcon icon={faUser} className="crumb-icon" />
           <span>Profile Manager</span>
