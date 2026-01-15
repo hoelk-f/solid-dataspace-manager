@@ -322,7 +322,7 @@ const TransactionHistory = ({ webId }) => {
 
   return (
     <div className="transactions-page">
-      <div className="transactions-header">
+      <div className="transactions-header toolbar--title">
         <div className="crumb">
           <FontAwesomeIcon icon={faChartLine} className="crumb-icon" />
           <span>Transaction History</span>
