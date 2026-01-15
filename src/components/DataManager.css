@@ -18,7 +18,7 @@
   height: 100%;
 }
 
-.data-manager-main .toolbar {
+.data-manager-main .toolbar:not(.toolbar--title) {
   display: flex;
   align-items: center;
   justify-content: space-between;
