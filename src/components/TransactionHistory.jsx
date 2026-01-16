@@ -103,7 +103,10 @@ const TransactionHistory = ({ webId }) => {
   const [vizScale, setVizScale] = useState(1);
   const [vizOffset, setVizOffset] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
+  const [draggingPod, setDraggingPod] = useState(null);
+  const [podAngles, setPodAngles] = useState([]);
   const dragStart = useRef({ x: 0, y: 0 });
+  const ringRef = useRef(null);
 
   const resolveInboxUrl = async () => {
     const profileDataset = await getSolidDataset(webId, { fetch: noCacheFetch });
@@ -252,7 +255,7 @@ const TransactionHistory = ({ webId }) => {
 
     return activeItems.map((item) => ({
       ...item,
-      direction: item.type === "decision" ? "outgoing" : "incoming",
+      direction: item.requesterWebId && item.requesterWebId === webId ? "incoming" : "outgoing",
     }));
   }, [decisions, requests, webId]);
 
@@ -286,6 +289,17 @@ const TransactionHistory = ({ webId }) => {
     });
     return pairs.slice(0, 4);
   }, [activeConnections, webId]);
+
+  useEffect(() => {
+    if (!connectionPairs.length) {
+      setPodAngles([]);
+      return;
+    }
+    setPodAngles((prev) => {
+      if (prev.length === connectionPairs.length) return prev;
+      return connectionPairs.map((_, index) => (360 / connectionPairs.length) * index);
+    });
+  }, [connectionPairs]);
 
   return (
     <div className="transactions-page">
@@ -341,31 +355,49 @@ const TransactionHistory = ({ webId }) => {
           <div className="dataspace-visual">
             <div
               className="dataspace-visual-inner"
-            style={{ transform: `translate(${vizOffset.x}px, ${vizOffset.y}px) scale(${vizScale})` }}
-            onMouseDown={(event) => {
-              setDragging(true);
-              dragStart.current = {
-                x: event.clientX - vizOffset.x,
-                y: event.clientY - vizOffset.y,
-              };
-            }}
-            onMouseMove={(event) => {
-              if (!dragging) return;
-              setVizOffset({
-                x: event.clientX - dragStart.current.x,
-                y: event.clientY - dragStart.current.y,
-              });
-            }}
-            onMouseUp={() => setDragging(false)}
-            onMouseLeave={() => setDragging(false)}
-            onWheel={(event) => {
-              event.preventDefault();
-              const delta = event.deltaY > 0 ? -0.05 : 0.05;
-              setVizScale((s) => Math.min(2, Math.max(0.6, s + delta)));
-            }}
-          >
-            <div className="dataspace-ring">
-              <div className="dataspace-center">DATASPACE</div>
+              style={{ transform: `translate(${vizOffset.x}px, ${vizOffset.y}px) scale(${vizScale})` }}
+              onMouseDown={(event) => {
+                setDragging(true);
+                dragStart.current = {
+                  x: event.clientX - vizOffset.x,
+                  y: event.clientY - vizOffset.y,
+                };
+              }}
+              onMouseMove={(event) => {
+                if (draggingPod !== null && ringRef.current) {
+                  const rect = ringRef.current.getBoundingClientRect();
+                  const cx = rect.left + rect.width / 2;
+                  const cy = rect.top + rect.height / 2;
+                  const angle = (Math.atan2(event.clientY - cy, event.clientX - cx) * 180) / Math.PI;
+                  setPodAngles((prev) => {
+                    const next = [...prev];
+                    next[draggingPod] = angle;
+                    return next;
+                  });
+                  return;
+                }
+                if (!dragging) return;
+                setVizOffset({
+                  x: event.clientX - dragStart.current.x,
+                  y: event.clientY - dragStart.current.y,
+                });
+              }}
+              onMouseUp={() => {
+                setDragging(false);
+                setDraggingPod(null);
+              }}
+              onMouseLeave={() => {
+                setDragging(false);
+                setDraggingPod(null);
+              }}
+              onWheel={(event) => {
+                event.preventDefault();
+                const delta = event.deltaY > 0 ? -0.05 : 0.05;
+                setVizScale((s) => Math.min(2, Math.max(0.6, s + delta)));
+              }}
+            >
+            <div className="dataspace-ring" ref={ringRef}>
+              <div className="dataspace-center">SOLID DATASPACE</div>
               {connectionPairs.length === 0 && (
                 <div className="dataspace-empty">No active connections</div>
               )}
@@ -374,16 +406,10 @@ const TransactionHistory = ({ webId }) => {
                   key={pair.id}
                   className="dataspace-connection"
                   style={{
-                    "--conn-angle": `${(360 / Math.max(connectionPairs.length, 1)) * index}deg`,
+                    "--conn-angle": `${podAngles[index] ?? 0}deg`,
                   }}
                 >
                   <span className="connection-line" />
-                  <div className="ring-node ring-node--a">
-                    <span>Pod</span>
-                  </div>
-                  <div className="ring-node ring-node--b">
-                    <span>Pod</span>
-                  </div>
                   <div className="pod-card pod-card--a">
                     <div className="pod-title">{pair.selfRoot}</div>
                     <div className="pod-subtitle">Your pod</div>
@@ -394,6 +420,20 @@ const TransactionHistory = ({ webId }) => {
                       {pair.direction === "incoming" ? "Incoming" : "Outgoing"}
                     </div>
                   </div>
+                  <div
+                    className="pod-drag-handle pod-drag--a"
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                      setDraggingPod(index);
+                    }}
+                  />
+                  <div
+                    className="pod-drag-handle pod-drag--b"
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                      setDraggingPod(index);
+                    }}
+                  />
                 </div>
               ))}
             </div>

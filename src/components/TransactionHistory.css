@@ -134,6 +134,8 @@
   font-weight: 700;
   color: #e2e8f0;
   text-transform: uppercase;
+  position: relative;
+  z-index: 3;
 }
 
 .dataspace-connection {
@@ -154,6 +156,7 @@
   transform: translate(-50%, -50%);
   border-radius: 999px;
   opacity: 0.75;
+  z-index: 1;
 }
 
 .ring-node {
@@ -186,21 +189,22 @@
 .pod-card {
   position: absolute;
   top: 50%;
-  width: 160px;
+  width: 200px;
   background: rgba(15, 23, 42, 0.95);
   border-radius: 12px;
   padding: 10px 12px;
   border: 1px solid rgba(148, 163, 184, 0.35);
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.4);
   transform: translateY(-50%);
+  z-index: 2;
 }
 
 .pod-card--a {
-  left: -12%;
+  left: -4%;
 }
 
 .pod-card--b {
-  right: -12%;
+  right: -4%;
 }
 
 .pod-title {
@@ -295,4 +299,29 @@
 .mono {
   font-family: "SF Mono", "Menlo", "Consolas", monospace;
   font-size: 0.85rem;
+}
+.pod-drag-handle {
+  position: absolute;
+  top: 50%;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.4);
+  transform: translateY(-50%);
+  cursor: grab;
+  z-index: 2;
+}
+
+.pod-drag-handle:active {
+  cursor: grabbing;
+}
+
+.pod-drag--a {
+  left: 8%;
+}
+
+.pod-drag--b {
+  right: 8%;
 }
