@@ -52,6 +52,11 @@ body {
   gap: 12px;
 }
 
+.toolbar--title .crumb {
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
 .crumb {
   display: flex;
   align-items: center;

@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
 import session from "../solidSession";
-import ForceGraph2D from "react-force-graph-2d";
 import {
   getSolidDataset,
   getContainedResourceUrlAll,
@@ -275,50 +274,23 @@ const TransactionHistory = ({ webId }) => {
     };
   }, [activeConnections]);
 
-  const graphData = useMemo(() => {
-    const nodes = [];
-    const links = [];
-    const nodeById = new Map();
-
-    const ensureNode = (id, type, label) => {
-      if (nodeById.has(id)) return nodeById.get(id);
-      const node = { id, type, label };
-      nodeById.set(id, node);
-      nodes.push(node);
-      return node;
-    };
-
-    const selfId = webId || "self";
-    ensureNode(selfId, "self", "You");
-
-    activeConnections.forEach((conn) => {
-      const datasetId = conn.datasetIdentifier || conn.datasetAccessUrl || conn.id;
-      const datasetLabel = conn.datasetTitle || datasetId;
-      ensureNode(datasetId, "dataset", datasetLabel);
-      ensureNode(conn.requesterWebId || "unknown", "partner", conn.requesterWebId || "Unknown");
-
-      if (conn.direction === "incoming") {
-        links.push({
-          source: conn.requesterWebId || "unknown",
-          target: datasetId,
-          type: "access",
-        });
-        links.push({
-          source: datasetId,
-          target: selfId,
-          type: "ownership",
-        });
-      } else {
-        links.push({
-          source: selfId,
-          target: datasetId,
-          type: "access",
+  const connectionPods = useMemo(() => {
+    const partners = new Map();
+    activeConnections.forEach((item) => {
+      if (!item.requesterWebId) return;
+      const url = new URL(item.requesterWebId);
+      const host = url.host;
+      if (!partners.has(item.requesterWebId)) {
+        partners.set(item.requesterWebId, {
+          id: item.requesterWebId,
+          host,
+          direction: item.direction,
         });
       }
     });
-
-    return { nodes, links };
-  }, [activeConnections, webId]);
+    const entries = Array.from(partners.values());
+    return entries.slice(0, 8);
+  }, [activeConnections]);
 
   return (
     <div className="transactions-page">
@@ -332,116 +304,99 @@ const TransactionHistory = ({ webId }) => {
         </button>
       </div>
 
-      <div className="transactions-stats">
-        <div className="stat-card">
-          <div className="stat-label">
-            <FontAwesomeIcon icon={faLink} /> Active connections
-          </div>
-          <div className="stat-value">{stats.total}</div>
-          <div className="stat-sub">Current valid access links</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">
-            <FontAwesomeIcon icon={faRightLeft} /> Incoming vs outgoing
-          </div>
-          <div className="stat-value">
-            {stats.incoming} / {stats.outgoing}
-          </div>
-          <div className="stat-sub">Incoming (to you) / Outgoing (from you)</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">
-            <FontAwesomeIcon icon={faDatabase} /> Active datasets
-          </div>
-          <div className="stat-value">{stats.datasets}</div>
-          <div className="stat-sub">Datasets with active access</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">
-            <FontAwesomeIcon icon={faDownload} /> Catalog downloads
-          </div>
-          <div className="stat-value">{stats.downloads ?? "—"}</div>
-          <div className="stat-sub">Tracking not enabled</div>
-        </div>
-      </div>
-
-      <div className="transactions-graph-card">
-        <div className="transactions-graph-header">
-          <span>Active Dataspace Connections</span>
-          <span className="graph-meta">{activeConnections.length} link(s)</span>
-        </div>
-        <div className="transactions-graph">
-          <ForceGraph2D
-            graphData={graphData}
-            nodeRelSize={6}
-            linkDirectionalParticles={2}
-            linkDirectionalParticleWidth={2}
-            linkColor={(link) =>
-              link.type === "ownership" ? "rgba(56, 189, 248, 0.7)" : "rgba(168, 85, 247, 0.7)"
-            }
-            nodeColor={(node) => {
-              if (node.type === "self") return "#38bdf8";
-              if (node.type === "dataset") return "#fbbf24";
-              return "#a855f7";
-            }}
-            nodeCanvasObject={(node, ctx, globalScale) => {
-              const label = node.label || node.id;
-              const fontSize = 12 / globalScale;
-              ctx.font = `${fontSize}px \"SF Pro Text\", sans-serif`;
-              ctx.fillStyle = node.type === "dataset" ? "#111827" : "#0f172a";
-              ctx.beginPath();
-              ctx.arc(node.x, node.y, 6, 0, 2 * Math.PI, false);
-              ctx.fillStyle =
-                node.type === "self"
-                  ? "#38bdf8"
-                  : node.type === "dataset"
-                  ? "#f59e0b"
-                  : "#a855f7";
-              ctx.fill();
-              ctx.fillStyle = "#0f172a";
-              ctx.fillText(label, node.x + 8, node.y + 3);
-            }}
-            nodePointerAreaPaint={(node, color, ctx) => {
-              ctx.fillStyle = color;
-              ctx.beginPath();
-              ctx.arc(node.x, node.y, 8, 0, 2 * Math.PI, false);
-              ctx.fill();
-            }}
-          />
-        </div>
-      </div>
-
-      <div className="transactions-table-card">
-        <div className="transactions-table-header">
-          <span>Active Connections</span>
-          <span className="graph-meta">{activeConnections.length} total</span>
-        </div>
-        {loading ? (
-          <div className="transactions-empty">Loading connections...</div>
-        ) : activeConnections.length === 0 ? (
-          <div className="transactions-empty">No active connections found.</div>
-        ) : (
-          <div className="transactions-table">
-            <div className="transactions-row transactions-row--head">
-              <span>Direction</span>
-              <span>Requester</span>
-              <span>Dataset</span>
-              <span>Last Update</span>
-              <span>Expires</span>
+      <div className="transactions-block">
+        <div className="transactions-stats">
+          <div className="stat-card">
+            <div className="stat-label">
+              <FontAwesomeIcon icon={faLink} /> Active connections
             </div>
-            {activeConnections.map((item) => (
-              <div className="transactions-row" key={item.id}>
-                <span className={`dir-pill dir-${item.direction}`}>
-                  {item.direction}
-                </span>
-                <span className="mono">{item.requesterWebId || "N/A"}</span>
-                <span>{item.datasetTitle || item.datasetIdentifier || "Untitled"}</span>
-                <span>{formatDateTime(item.decidedAt || item.createdAt)}</span>
-                <span>{formatDateTime(item.expiresAt)}</span>
-              </div>
-            ))}
+            <div className="stat-value">{stats.total}</div>
+            <div className="stat-sub">Current valid access links</div>
           </div>
-        )}
+          <div className="stat-card">
+            <div className="stat-label">
+              <FontAwesomeIcon icon={faRightLeft} /> Incoming vs outgoing
+            </div>
+            <div className="stat-value">
+              {stats.incoming} / {stats.outgoing}
+            </div>
+            <div className="stat-sub">Incoming (to you) / Outgoing (from you)</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">
+              <FontAwesomeIcon icon={faDatabase} /> Active datasets
+            </div>
+            <div className="stat-value">{stats.datasets}</div>
+            <div className="stat-sub">Datasets with active access</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">
+              <FontAwesomeIcon icon={faDownload} /> Catalog downloads
+            </div>
+            <div className="stat-value">{stats.downloads ?? "—"}</div>
+            <div className="stat-sub">Tracking not enabled</div>
+          </div>
+        </div>
+
+        <div className="transactions-graph-card">
+          <div className="transactions-graph-header">
+            <span>Active Dataspace Connections</span>
+            <span className="graph-meta">{activeConnections.length} link(s)</span>
+          </div>
+          <div className="dataspace-visual">
+            <div className="dataspace-ring">
+              <div className="dataspace-center">DATASPACE</div>
+              {connectionPods.map((pod, index) => (
+                <div
+                  key={pod.id}
+                  className={`pod-node pod-${pod.direction}`}
+                  style={{ "--pod-index": index, "--pod-count": connectionPods.length }}
+                >
+                  <div className="pod-card">
+                    <div className="pod-title">{pod.host}</div>
+                    <div className="pod-subtitle">
+                      {pod.direction === "incoming" ? "Incoming" : "Outgoing"}
+                    </div>
+                  </div>
+                  <span className="pod-line" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="transactions-table-card">
+          <div className="transactions-table-header">
+            <span>Active Connections</span>
+            <span className="graph-meta">{activeConnections.length} total</span>
+          </div>
+          {loading ? (
+            <div className="transactions-empty">Loading connections...</div>
+          ) : activeConnections.length === 0 ? (
+            <div className="transactions-empty">No active connections found.</div>
+          ) : (
+            <div className="transactions-table">
+              <div className="transactions-row transactions-row--head">
+                <span>Direction</span>
+                <span>Requester</span>
+                <span>Dataset</span>
+                <span>Last Update</span>
+                <span>Expires</span>
+              </div>
+              {activeConnections.map((item) => (
+                <div className="transactions-row" key={item.id}>
+                  <span className={`dir-pill dir-${item.direction}`}>
+                    {item.direction}
+                  </span>
+                  <span className="mono">{item.requesterWebId || "N/A"}</span>
+                  <span>{item.datasetTitle || item.datasetIdentifier || "Untitled"}</span>
+                  <span>{formatDateTime(item.decidedAt || item.createdAt)}</span>
+                  <span>{formatDateTime(item.expiresAt)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {error && <div className="transactions-error">{error}</div>}
