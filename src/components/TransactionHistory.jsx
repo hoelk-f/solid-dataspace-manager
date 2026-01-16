@@ -268,14 +268,7 @@ const TransactionHistory = ({ webId }) => {
 
     return activeItems.map((item) => ({
       ...item,
-      direction: (() => {
-        const selfRoot = getPodRoot(webId);
-        const ownerRoot = getOwnerRoot(item);
-        if (ownerRoot && selfRoot && ownerRoot === selfRoot) return "incoming";
-        if (ownerRoot && selfRoot && ownerRoot !== selfRoot) return "outgoing";
-        if (item.requesterWebId && item.requesterWebId === webId) return "incoming";
-        return "outgoing";
-      })(),
+      direction: item.requesterWebId && item.requesterWebId === webId ? "incoming" : "outgoing",
     }));
   }, [decisions, requests, webId]);
 
