@@ -84,6 +84,19 @@ const getPodRoot = (webId) => {
   }
 };
 
+const getOwnerRoot = (item) => {
+  const url = item.datasetAccessUrl || item.datasetSemanticModelUrl || item.catalogUrl || "";
+  if (!url) return "";
+  try {
+    const parsed = new URL(url);
+    const trimmed = parsed.pathname.split("/").filter(Boolean);
+    const rootPath = trimmed.length ? `/${trimmed[0]}/` : "/";
+    return `${parsed.origin}${rootPath}`;
+  } catch {
+    return "";
+  }
+};
+
 const getDecisionTime = (item) =>
   Date.parse(item.decidedAt || item.createdAt) || item.urlTime || 0;
 
@@ -255,7 +268,14 @@ const TransactionHistory = ({ webId }) => {
 
     return activeItems.map((item) => ({
       ...item,
-      direction: item.requesterWebId && item.requesterWebId === webId ? "incoming" : "outgoing",
+      direction: (() => {
+        const selfRoot = getPodRoot(webId);
+        const ownerRoot = getOwnerRoot(item);
+        if (ownerRoot && selfRoot && ownerRoot === selfRoot) return "incoming";
+        if (ownerRoot && selfRoot && ownerRoot !== selfRoot) return "outgoing";
+        if (item.requesterWebId && item.requesterWebId === webId) return "incoming";
+        return "outgoing";
+      })(),
     }));
   }, [decisions, requests, webId]);
 
@@ -278,12 +298,14 @@ const TransactionHistory = ({ webId }) => {
     const pairs = [];
     const selfRoot = getPodRoot(webId) || "your pod";
     activeConnections.forEach((item) => {
-      if (!item.requesterWebId) return;
-      const partnerRoot = getPodRoot(item.requesterWebId);
+      const requesterRoot = getPodRoot(item.requesterWebId);
+      const ownerRoot = getOwnerRoot(item);
+      const partnerRoot =
+        item.direction === "incoming" ? requesterRoot || ownerRoot : ownerRoot || requesterRoot;
       pairs.push({
         id: item.id,
         selfRoot,
-        partnerRoot,
+        partnerRoot: partnerRoot || "unknown pod",
         direction: item.direction,
       });
     });
@@ -404,7 +426,7 @@ const TransactionHistory = ({ webId }) => {
               {connectionPairs.map((pair, index) => (
                 <div
                   key={pair.id}
-                  className="dataspace-connection"
+                  className={`dataspace-connection ${pair.direction === "incoming" ? "conn-incoming" : "conn-outgoing"}`}
                   style={{
                     "--conn-angle": `${podAngles[index] ?? 0}deg`,
                   }}
@@ -424,6 +446,7 @@ const TransactionHistory = ({ webId }) => {
                     className="pod-drag-handle pod-drag--a"
                     onMouseDown={(event) => {
                       event.preventDefault();
+                      event.stopPropagation();
                       setDraggingPod(index);
                     }}
                   />
@@ -431,6 +454,7 @@ const TransactionHistory = ({ webId }) => {
                     className="pod-drag-handle pod-drag--b"
                     onMouseDown={(event) => {
                       event.preventDefault();
+                      event.stopPropagation();
                       setDraggingPod(index);
                     }}
                   />
