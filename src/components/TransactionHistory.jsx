@@ -400,11 +400,6 @@ const TransactionHistory = ({ webId }) => {
       </div>
 
       {error && <div className="transactions-error">{error}</div>}
-      {inboxUrl && (
-        <div className="transactions-inbox">
-          Inbox: <a href={inboxUrl}>{inboxUrl}</a>
-        </div>
-      )}
     </div>
   );
 };
