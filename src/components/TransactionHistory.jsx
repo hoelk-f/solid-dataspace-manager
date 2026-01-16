@@ -71,6 +71,19 @@ const buildDecisionKey = (item) => {
   return parts.join("|");
 };
 
+const getPodRoot = (webId) => {
+  if (!webId) return "";
+  try {
+    const url = new URL(webId);
+    const profileIndex = url.pathname.indexOf("/profile/");
+    const basePath =
+      profileIndex >= 0 ? url.pathname.slice(0, profileIndex + 1) : url.pathname;
+    return `${url.origin}${basePath}`;
+  } catch {
+    return webId;
+  }
+};
+
 const getDecisionTime = (item) =>
   Date.parse(item.decidedAt || item.createdAt) || item.urlTime || 0;
 
@@ -239,7 +252,7 @@ const TransactionHistory = ({ webId }) => {
 
     return activeItems.map((item) => ({
       ...item,
-      direction: item.requesterWebId && item.requesterWebId === webId ? "outgoing" : "incoming",
+      direction: item.type === "decision" ? "outgoing" : "incoming",
     }));
   }, [decisions, requests, webId]);
 
@@ -260,14 +273,14 @@ const TransactionHistory = ({ webId }) => {
 
   const connectionPairs = useMemo(() => {
     const pairs = [];
-    const selfHost = webId ? new URL(webId).host : "your pod";
+    const selfRoot = getPodRoot(webId) || "your pod";
     activeConnections.forEach((item) => {
       if (!item.requesterWebId) return;
-      const partnerHost = new URL(item.requesterWebId).host;
+      const partnerRoot = getPodRoot(item.requesterWebId);
       pairs.push({
         id: item.id,
-        selfHost,
-        partnerHost,
+        selfRoot,
+        partnerRoot,
         direction: item.direction,
       });
     });
@@ -320,31 +333,14 @@ const TransactionHistory = ({ webId }) => {
           </div>
         </div>
 
-      <div className="transactions-graph-card">
-        <div className="transactions-graph-header">
-          <span>Active Dataspace Connections</span>
-          <span className="graph-meta">{activeConnections.length} link(s)</span>
-        </div>
-        <div className="viz-controls">
-          <button className="icon-btn icon-btn--ghost" onClick={() => setVizScale((s) => Math.min(2, s + 0.1))}>
-            +
-          </button>
-          <button className="icon-btn icon-btn--ghost" onClick={() => setVizScale((s) => Math.max(0.6, s - 0.1))}>
-            −
-          </button>
-          <button
-            className="icon-btn icon-btn--ghost"
-            onClick={() => {
-              setVizScale(1);
-              setVizOffset({ x: 0, y: 0 });
-            }}
-          >
-            Reset
-          </button>
-        </div>
-        <div className="dataspace-visual">
-          <div
-            className="dataspace-visual-inner"
+        <div className="transactions-graph-card">
+          <div className="transactions-graph-header">
+            <span>Active Dataspace Connections</span>
+            <span className="graph-meta">{activeConnections.length} link(s)</span>
+          </div>
+          <div className="dataspace-visual">
+            <div
+              className="dataspace-visual-inner"
             style={{ transform: `translate(${vizOffset.x}px, ${vizOffset.y}px) scale(${vizScale})` }}
             onMouseDown={(event) => {
               setDragging(true);
@@ -389,11 +385,11 @@ const TransactionHistory = ({ webId }) => {
                     <span>Pod</span>
                   </div>
                   <div className="pod-card pod-card--a">
-                    <div className="pod-title">{pair.selfHost}</div>
+                    <div className="pod-title">{pair.selfRoot}</div>
                     <div className="pod-subtitle">Your pod</div>
                   </div>
                   <div className="pod-card pod-card--b">
-                    <div className="pod-title">{pair.partnerHost}</div>
+                    <div className="pod-title">{pair.partnerRoot}</div>
                     <div className="pod-subtitle">
                       {pair.direction === "incoming" ? "Incoming" : "Outgoing"}
                     </div>
