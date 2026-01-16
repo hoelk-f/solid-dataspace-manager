@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import session from "../solidSession";
 import {
   getSolidDataset,
@@ -87,6 +87,10 @@ const TransactionHistory = ({ webId }) => {
   const [error, setError] = useState("");
   const [decisions, setDecisions] = useState([]);
   const [requests, setRequests] = useState([]);
+  const [vizScale, setVizScale] = useState(1);
+  const [vizOffset, setVizOffset] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const dragStart = useRef({ x: 0, y: 0 });
 
   const resolveInboxUrl = async () => {
     const profileDataset = await getSolidDataset(webId, { fetch: noCacheFetch });
@@ -213,8 +217,10 @@ const TransactionHistory = ({ webId }) => {
   }, [webId]);
 
   const activeConnections = useMemo(() => {
+    const combined = [...decisions, ...requests];
     const latestByKey = new Map();
-    decisions.forEach((item) => {
+
+    combined.forEach((item) => {
       const key = buildDecisionKey(item);
       if (!latestByKey.has(key)) {
         latestByKey.set(key, item);
@@ -226,38 +232,16 @@ const TransactionHistory = ({ webId }) => {
       }
     });
 
-    const activeDecisions = Array.from(latestByKey.values()).filter(
-      (item) => item.decision === "approved" && !isExpired(item)
-    );
-
-    const latestRequests = new Map();
-    requests.forEach((item) => {
-      const key = buildDecisionKey(item);
-      if (!latestRequests.has(key)) {
-        latestRequests.set(key, item);
-        return;
-      }
-      const existing = latestRequests.get(key);
-      if (getDecisionTime(item) >= getDecisionTime(existing)) {
-        latestRequests.set(key, item);
-      }
+    const activeItems = Array.from(latestByKey.values()).filter((item) => {
+      const decision = item.decision || item.status || "";
+      return decision === "approved" && !isExpired(item);
     });
 
-    const activeRequests = Array.from(latestRequests.values()).filter(
-      (item) => item.status === "approved" && !isExpired(item)
-    );
-
-    const incoming = activeRequests.map((item) => ({
+    return activeItems.map((item) => ({
       ...item,
-      direction: "incoming",
+      direction: item.requesterWebId && item.requesterWebId === webId ? "outgoing" : "incoming",
     }));
-    const outgoing = activeDecisions.map((item) => ({
-      ...item,
-      direction: "outgoing",
-    }));
-
-    return [...incoming, ...outgoing];
-  }, [decisions, requests]);
+  }, [decisions, requests, webId]);
 
   const stats = useMemo(() => {
     const incoming = activeConnections.filter((item) => item.direction === "incoming");
@@ -274,23 +258,21 @@ const TransactionHistory = ({ webId }) => {
     };
   }, [activeConnections]);
 
-  const connectionPods = useMemo(() => {
-    const partners = new Map();
+  const connectionPairs = useMemo(() => {
+    const pairs = [];
+    const selfHost = webId ? new URL(webId).host : "your pod";
     activeConnections.forEach((item) => {
       if (!item.requesterWebId) return;
-      const url = new URL(item.requesterWebId);
-      const host = url.host;
-      if (!partners.has(item.requesterWebId)) {
-        partners.set(item.requesterWebId, {
-          id: item.requesterWebId,
-          host,
-          direction: item.direction,
-        });
-      }
+      const partnerHost = new URL(item.requesterWebId).host;
+      pairs.push({
+        id: item.id,
+        selfHost,
+        partnerHost,
+        direction: item.direction,
+      });
     });
-    const entries = Array.from(partners.values());
-    return entries.slice(0, 8);
-  }, [activeConnections]);
+    return pairs.slice(0, 4);
+  }, [activeConnections, webId]);
 
   return (
     <div className="transactions-page">
@@ -338,32 +320,90 @@ const TransactionHistory = ({ webId }) => {
           </div>
         </div>
 
-        <div className="transactions-graph-card">
-          <div className="transactions-graph-header">
-            <span>Active Dataspace Connections</span>
-            <span className="graph-meta">{activeConnections.length} link(s)</span>
-          </div>
-          <div className="dataspace-visual">
+      <div className="transactions-graph-card">
+        <div className="transactions-graph-header">
+          <span>Active Dataspace Connections</span>
+          <span className="graph-meta">{activeConnections.length} link(s)</span>
+        </div>
+        <div className="viz-controls">
+          <button className="icon-btn icon-btn--ghost" onClick={() => setVizScale((s) => Math.min(2, s + 0.1))}>
+            +
+          </button>
+          <button className="icon-btn icon-btn--ghost" onClick={() => setVizScale((s) => Math.max(0.6, s - 0.1))}>
+            −
+          </button>
+          <button
+            className="icon-btn icon-btn--ghost"
+            onClick={() => {
+              setVizScale(1);
+              setVizOffset({ x: 0, y: 0 });
+            }}
+          >
+            Reset
+          </button>
+        </div>
+        <div className="dataspace-visual">
+          <div
+            className="dataspace-visual-inner"
+            style={{ transform: `translate(${vizOffset.x}px, ${vizOffset.y}px) scale(${vizScale})` }}
+            onMouseDown={(event) => {
+              setDragging(true);
+              dragStart.current = {
+                x: event.clientX - vizOffset.x,
+                y: event.clientY - vizOffset.y,
+              };
+            }}
+            onMouseMove={(event) => {
+              if (!dragging) return;
+              setVizOffset({
+                x: event.clientX - dragStart.current.x,
+                y: event.clientY - dragStart.current.y,
+              });
+            }}
+            onMouseUp={() => setDragging(false)}
+            onMouseLeave={() => setDragging(false)}
+            onWheel={(event) => {
+              event.preventDefault();
+              const delta = event.deltaY > 0 ? -0.05 : 0.05;
+              setVizScale((s) => Math.min(2, Math.max(0.6, s + delta)));
+            }}
+          >
             <div className="dataspace-ring">
               <div className="dataspace-center">DATASPACE</div>
-              {connectionPods.map((pod, index) => (
+              {connectionPairs.length === 0 && (
+                <div className="dataspace-empty">No active connections</div>
+              )}
+              {connectionPairs.map((pair, index) => (
                 <div
-                  key={pod.id}
-                  className={`pod-node pod-${pod.direction}`}
-                  style={{ "--pod-index": index, "--pod-count": connectionPods.length }}
+                  key={pair.id}
+                  className="dataspace-connection"
+                  style={{
+                    "--conn-angle": `${(360 / Math.max(connectionPairs.length, 1)) * index}deg`,
+                  }}
                 >
-                  <div className="pod-card">
-                    <div className="pod-title">{pod.host}</div>
+                  <span className="connection-line" />
+                  <div className="ring-node ring-node--a">
+                    <span>Pod</span>
+                  </div>
+                  <div className="ring-node ring-node--b">
+                    <span>Pod</span>
+                  </div>
+                  <div className="pod-card pod-card--a">
+                    <div className="pod-title">{pair.selfHost}</div>
+                    <div className="pod-subtitle">Your pod</div>
+                  </div>
+                  <div className="pod-card pod-card--b">
+                    <div className="pod-title">{pair.partnerHost}</div>
                     <div className="pod-subtitle">
-                      {pod.direction === "incoming" ? "Incoming" : "Outgoing"}
+                      {pair.direction === "incoming" ? "Incoming" : "Outgoing"}
                     </div>
                   </div>
-                  <span className="pod-line" />
                 </div>
               ))}
             </div>
           </div>
         </div>
+      </div>
 
         <div className="transactions-table-card">
           <div className="transactions-table-header">
