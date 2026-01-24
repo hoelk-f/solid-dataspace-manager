@@ -294,7 +294,7 @@ const TransactionHistory = ({ webId }) => {
       const requesterRoot = getPodRoot(item.requesterWebId);
       const ownerRoot = getOwnerRoot(item);
       const partnerRoot =
-        item.direction === "incoming" ? requesterRoot || ownerRoot : ownerRoot || requesterRoot;
+        item.direction === "incoming" ? ownerRoot || requesterRoot : requesterRoot || ownerRoot;
       pairs.push({
         id: item.id,
         selfRoot,
@@ -432,7 +432,7 @@ const TransactionHistory = ({ webId }) => {
                   <div className="pod-card pod-card--b">
                     <div className="pod-title">{pair.partnerRoot}</div>
                     <div className="pod-subtitle">
-                      {pair.direction === "incoming" ? "Incoming" : "Outgoing"}
+                      {pair.direction === "incoming" ? "Outgoing" : "Incoming"}
                     </div>
                   </div>
                   <div
