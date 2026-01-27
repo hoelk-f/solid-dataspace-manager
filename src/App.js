@@ -21,7 +21,7 @@ const App = () => {
   const [checkingProfile, setCheckingProfile] = useState(false);
 
   useEffect(() => {
-    document.title = "Solid Dataspace Manager";
+    document.title = "Solid Dataspace";
     if (session.info.isLoggedIn) {
       const w = session.info.webId;
       if (w) {
@@ -105,7 +105,7 @@ const App = () => {
     await session.login({
       oidcIssuer: issuer,
       redirectUrl: window.location.href,
-      clientName: "Solid Dataspace Manager",
+      clientName: "Solid Dataspace",
     });
   };
 
@@ -120,12 +120,23 @@ const App = () => {
   if (checkingProfile) {
     return (
       <div className="container">
-        <div style={{ padding: "24px 8px" }}>Checking profile...</div>
+        <div className="loading-screen">
+          <div className="loading-card">
+            <div className="loading-content">
+              <div className="loading-eyebrow">Solid Dataspace</div>
+              <div className="loading-title">Checking profile</div>
+              <p className="loading-subtitle">
+                We are connecting to your Solid Pod and verifying required profile details.
+              </p>
+              <div className="loading-bar" role="progressbar" aria-label="Checking profile">
+                <span className="loading-bar__fill"></span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
-  }
-
-  if (onboardingRequired) {
+  }  if (onboardingRequired) {
     return (
       <div className="container">
         <OnboardingWizard

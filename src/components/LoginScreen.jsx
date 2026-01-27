@@ -21,7 +21,7 @@ export default function LoginScreen({ onLogin }) {
             <FontAwesomeIcon icon={faLock} />
           </div>
           <div>
-            <div className="login-hero-title">Solid Dataspace Manager</div>
+            <div className="login-hero-title">Solid Dataspace</div>
             <div className="login-hero-sub">Choose your Solid Pod provider</div>
           </div>
         </div>

@@ -11,6 +11,6 @@ import App from "./App";
 
 test("renders login screen", () => {
   render(<App />);
-  const title = screen.getByText(/Solid Dataspace Manager/i);
+  const title = screen.getByText(/Solid Dataspace/i);
   expect(title).toBeInTheDocument();
 });

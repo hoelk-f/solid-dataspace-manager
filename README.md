@@ -1,6 +1,6 @@
-# Solid Dataspace Manager
+# Solid Dataspace
 
-Solid Dataspace Manager is a web application for managing data in Solid Pods and authenticating with Solid.
+Solid Dataspace is a web application for managing data in Solid Pods and authenticating with Solid.
 
 ## Access Request Inbox
 

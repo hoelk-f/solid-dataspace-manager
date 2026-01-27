@@ -1,7 +1,7 @@
 import { Session } from "@inrupt/solid-client-authn-browser";
 
 const session = new Session({
-  clientName: "Solid Dataspace Manager",
+  clientName: "Solid Dataspace",
   sessionId: "dataspace-manager",
 });
 

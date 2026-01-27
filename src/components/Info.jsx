@@ -24,7 +24,7 @@ function Info() {
         <div />
       </div>
       <p className="info-intro">
-        Solid Dataspace Manager is a prototype dataspace built on Solid, the decentralised data platform
+        Solid Dataspace is a prototype dataspace built on Solid, the decentralised data platform
         initiated by web inventor Tim Berners-Lee. Solid lets individuals store information in personal
         online data stores called Pods that they control. Using open standards for authentication and
         data interchange, Pods allow people to decide where their data lives, who can access it, and to
@@ -103,9 +103,6 @@ function Info() {
         <p>
           Node-RED provides real-time data integration. Flows collect data streams and store them in
           Solid Pods, keeping live information available within the dataspace.
-        </p>
-        <p>
-          Use the credentials <code>solid-dataspace</code> and  <code> QsLumGq^BSJr^eB2xM%4</code> to sign in to the Node-RED dashboard.
         </p>
       </div>
 
