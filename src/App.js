@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import session from "./solidSession";
 import "./App.css";
+import "solid-data-manager/embed.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
-import DataManager from "./components/DataManager";
+import { DataManagerEmbed, setSession as setDataManagerSession } from "solid-data-manager/embed";
 import ExternalHost from "./components/ExternalHost";
 import Info from "./components/Info";
 import LoginScreen from "./components/LoginScreen";
@@ -29,6 +30,10 @@ const App = () => {
         setSessionActive(true);
       }
     }
+  }, []);
+
+  useEffect(() => {
+    setDataManagerSession(session);
   }, []);
 
   useEffect(() => {
@@ -158,7 +163,7 @@ const App = () => {
         <div className="main">
           <div className="container">
             <Routes>
-              <Route path="/" element={<DataManager webId={webId} />} />
+              <Route path="/" element={<DataManagerEmbed webId={webId} />} />
               <Route path="/transactions" element={<TransactionHistory webId={webId} />} />
               <Route path="/notifications" element={<Notifications webId={webId} />} />
               <Route path="/decisions" element={<DecisionInbox webId={webId} />} />
