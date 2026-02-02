@@ -14,7 +14,8 @@ import {
   faServer,
   faInbox,
   faBell,
-  faChartLine
+  faChartLine,
+  faFolder
 } from "@fortawesome/free-solid-svg-icons";
 import session from "../solidSession";
 import {
@@ -158,8 +159,8 @@ function Sidebar({ webId }) {
       <nav className="sb-nav">
         <div className="sb-section">General</div>
         <Link to="/" className={"sb-link" + (isActive("/") ? " active" : "")}>
-          <FontAwesomeIcon icon={faTableColumns} />
-          <span>Data Manager</span>
+          <FontAwesomeIcon icon={faFolder} />
+          <span>Solid Data Manager</span>
         </Link>
         <Link
           to="/transactions"

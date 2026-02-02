@@ -8,6 +8,7 @@ import {
   getUrl,
   getUrlAll,
   getStringNoLocale,
+  getDatetime,
   deleteFile,
   saveSolidDatasetAt,
   setStringNoLocale,
@@ -51,6 +52,7 @@ const SDM = {
 };
 
 const DCT_CREATED = "http://purl.org/dc/terms/created";
+const AS_PUBLISHED = "https://www.w3.org/ns/activitystreams#published";
 const DCT_TITLE = "http://purl.org/dc/terms/title";
 const LAST_SEEN_REQUESTS_KEY = "sdm-last-seen-requests";
 
@@ -69,8 +71,8 @@ const noCacheFetch = (input, init = {}) =>
 
 const formatDateTime = (value) => {
   if (!value) return "N/A";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
   return date.toLocaleString("de-DE", {
     year: "numeric",
     month: "2-digit",
@@ -78,6 +80,19 @@ const formatDateTime = (value) => {
     hour: "2-digit",
     minute: "2-digit",
   });
+};
+
+const getDisplayStatus = (status) => {
+  if (status === "approved") return "Approved";
+  if (status === "denied" || status === "revoked" || status === "expired") return "Denied";
+  if (status === "pending") return "Pending";
+  return status || "Pending";
+};
+
+const getStatusClass = (status) => {
+  if (status === "approved") return "status-approved";
+  if (status === "denied" || status === "revoked" || status === "expired") return "status-denied";
+  return "status-pending";
 };
 
 const Notifications = ({ webId }) => {
@@ -134,6 +149,12 @@ const Notifications = ({ webId }) => {
     }
     if (item.catalogUrl) {
       lines.push(`  sdm:catalogUrl <${item.catalogUrl}>;`);
+    }
+    if (item.requesterName) {
+      lines.push(`  sdm:requesterName "${escapeLiteral(item.requesterName)}";`);
+    }
+    if (item.requesterEmail) {
+      lines.push(`  sdm:requesterEmail "${escapeLiteral(item.requesterEmail)}";`);
     }
     if (note) {
       lines.push(`  sdm:decisionComment "${escapeLiteral(note)}";`);
@@ -201,7 +222,12 @@ const Notifications = ({ webId }) => {
       expiresAt: getStringNoLocale(thing, SDM.expiresAt) || "",
       decidedAt: getStringNoLocale(thing, SDM.decidedAt) || "",
       decidedBy: getUrl(thing, SDM.decidedBy) || "",
-      createdAt: getStringNoLocale(thing, DCT_CREATED) || "",
+      createdAt:
+        getDatetime(thing, DCT_CREATED) ||
+        getDatetime(thing, AS_PUBLISHED) ||
+        getStringNoLocale(thing, DCT_CREATED) ||
+        getStringNoLocale(thing, AS_PUBLISHED) ||
+        "",
     };
   };
 
@@ -521,18 +547,18 @@ const Notifications = ({ webId }) => {
                     ID: {item.datasetIdentifier || "N/A"}
                   </div>
                 </div>
-                <span className={`status-pill status-${item.status}`}>
-                  {item.status === "revoked" || item.status === "denied" ? "closed" : item.status}
+                <span className={`status-pill ${getStatusClass(item.status)}`}>
+                  {getDisplayStatus(item.status)}
                 </span>
               </div>
 
               <div className="notification-meta">
-                <div><strong>Requested:</strong> {formatDateTime(item.createdAt)}</div>
                 <div><strong>Requester:</strong> {item.requesterName || "N/A"}</div>
                 <div><strong>Email:</strong> {item.requesterEmail || "N/A"}</div>
                 <div className="notification-webid">
                   <strong>WebID:</strong> {item.requesterWebId || "N/A"}
                 </div>
+                <div><strong>Requested:</strong> {formatDateTime(item.createdAt)}</div>
               </div>
 
               {item.message && (
@@ -541,32 +567,12 @@ const Notifications = ({ webId }) => {
                 </div>
               )}
 
-              <div className="notification-links">
-                {item.datasetAccessUrl && (
-                  <a href={item.datasetAccessUrl} target="_blank" rel="noopener noreferrer">
-                    Dataset
-                  </a>
-                )}
-                {item.datasetSemanticModelUrl && (
-                  <a href={item.datasetSemanticModelUrl} target="_blank" rel="noopener noreferrer">
-                    Semantic Model
-                  </a>
-                )}
-                {item.catalogUrl && (
-                  <a href={item.catalogUrl} target="_blank" rel="noopener noreferrer">
-                    Catalog
-                  </a>
-                )}
-              </div>
-
               {item.status !== "pending" && (
                 <div className="notification-decision">
                   <div>
-                    <strong>Decision:</strong>{" "}
-                    {item.status === "revoked" || item.status === "denied" ? "closed" : item.status}
+                    <strong>Decision:</strong> {getDisplayStatus(item.status)}
                   </div>
                   <div><strong>Decided At:</strong> {formatDateTime(item.decidedAt)}</div>
-                  <div><strong>Expires:</strong> {formatDateTime(item.expiresAt)}</div>
                   {item.decisionComment && (
                     <div><strong>Comment:</strong> {item.decisionComment}</div>
                   )}
@@ -615,15 +621,41 @@ const Notifications = ({ webId }) => {
                   </div>
                 </div>
               )}
-              {item.status === "approved" && (
-                <div className="notification-buttons">
-                  <button
-                    className="btn-deny"
-                    onClick={() => handleDecision(item, "revoked")}
-                    disabled={processingId === item.id}
-                  >
-                    <FontAwesomeIcon icon={faXmark} /> Revoke
-                  </button>
+              {item.status !== "pending" && (
+                <div className="notification-actions">
+                  <div className="notification-inputs">
+                    {item.status !== "approved" && (
+                      <label>
+                        Expiry (optional)
+                        <input
+                          type="datetime-local"
+                          value={decisionExpiry[item.id] || ""}
+                          onChange={(e) =>
+                            setDecisionExpiry((prev) => ({ ...prev, [item.id]: e.target.value }))
+                          }
+                        />
+                      </label>
+                    )}
+                  </div>
+                  <div className="notification-buttons">
+                    {item.status !== "approved" ? (
+                      <button
+                        className="btn-approve"
+                        onClick={() => handleDecision(item, "approved")}
+                        disabled={processingId === item.id}
+                      >
+                        <FontAwesomeIcon icon={faCheck} /> Approve
+                      </button>
+                    ) : (
+                      <button
+                        className="btn-deny"
+                        onClick={() => handleDecision(item, "revoked")}
+                        disabled={processingId === item.id}
+                      >
+                        <FontAwesomeIcon icon={faXmark} /> Revoke
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

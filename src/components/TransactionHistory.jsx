@@ -118,6 +118,7 @@ const TransactionHistory = ({ webId }) => {
   const [dragging, setDragging] = useState(false);
   const [draggingPod, setDraggingPod] = useState(null);
   const [podAngles, setPodAngles] = useState([]);
+  const [ringRadius, setRingRadius] = useState(0);
   const dragStart = useRef({ x: 0, y: 0 });
   const ringRef = useRef(null);
 
@@ -288,21 +289,18 @@ const TransactionHistory = ({ webId }) => {
   }, [activeConnections]);
 
   const connectionPairs = useMemo(() => {
-    const pairs = [];
     const selfRoot = getPodRoot(webId) || "your pod";
-    activeConnections.forEach((item) => {
+    return activeConnections.map((item) => {
       const requesterRoot = getPodRoot(item.requesterWebId);
       const ownerRoot = getOwnerRoot(item);
       const partnerRoot =
         item.direction === "incoming" ? ownerRoot || requesterRoot : requesterRoot || ownerRoot;
-      pairs.push({
+      return {
         id: item.id,
-        selfRoot,
         partnerRoot: partnerRoot || "unknown pod",
         direction: item.direction,
-      });
+      };
     });
-    return pairs.slice(0, 4);
   }, [activeConnections, webId]);
 
   useEffect(() => {
@@ -312,10 +310,21 @@ const TransactionHistory = ({ webId }) => {
     }
     setPodAngles((prev) => {
       if (prev.length === connectionPairs.length) return prev;
-      return connectionPairs.map((_, index) => (360 / connectionPairs.length) * index);
+      return connectionPairs.map((_, index) => (360 / connectionPairs.length) * index - 90);
     });
   }, [connectionPairs]);
 
+
+  useEffect(() => {
+    const updateRadius = () => {
+      if (!ringRef.current) return;
+      const rect = ringRef.current.getBoundingClientRect();
+      setRingRadius(rect.width / 2);
+    };
+    updateRadius();
+    window.addEventListener("resize", updateRadius);
+    return () => window.removeEventListener("resize", updateRadius);
+  }, []);
   return (
     <div className="transactions-page">
       <div className="transactions-header toolbar--title">
@@ -411,48 +420,49 @@ const TransactionHistory = ({ webId }) => {
                 setVizScale((s) => Math.min(2, Math.max(0.6, s + delta)));
               }}
             >
-            <div className="dataspace-ring" ref={ringRef}>
+            <div className="dataspace-ring" ref={ringRef} style={{ "--ring-radius": `${ringRadius}px` }}>
               <div className="dataspace-center">SOLID DATASPACE</div>
+              <div className="pod-card pod-card--self">
+                <div className="pod-title">{getPodRoot(webId) || "your pod"}</div>
+                <div className="pod-subtitle">Your pod</div>
+              </div>
               {connectionPairs.length === 0 && (
                 <div className="dataspace-empty">No active connections</div>
               )}
-              {connectionPairs.map((pair, index) => (
-                <div
-                  key={pair.id}
-                  className={`dataspace-connection ${pair.direction === "incoming" ? "conn-incoming" : "conn-outgoing"}`}
-                  style={{
-                    "--conn-angle": `${podAngles[index] ?? 0}deg`,
-                  }}
-                >
-                  <span className="connection-line" />
-                  <div className="pod-card pod-card--a">
-                    <div className="pod-title">{pair.selfRoot}</div>
-                    <div className="pod-subtitle">Your pod</div>
-                  </div>
-                  <div className="pod-card pod-card--b">
-                    <div className="pod-title">{pair.partnerRoot}</div>
-                    <div className="pod-subtitle">
-                      {pair.direction === "incoming" ? "Outgoing" : "Incoming"}
+              {connectionPairs.map((pair, index) => {
+                const rawAngle = podAngles[index] ?? 0;
+                const normalized = ((rawAngle + 180) % 360) - 180;
+                const rad = (normalized * Math.PI) / 180;
+                const length = ringRadius ? Math.max(0, 2 * ringRadius * Math.cos(rad / 2)) : 0;
+                const rotate = (Math.atan2(Math.sin(rad), Math.cos(rad) + 1) * 180) / Math.PI;
+                return (
+                  <div
+                    key={pair.id}
+                    className={`dataspace-connection ${pair.direction === "incoming" ? "conn-incoming" : "conn-outgoing"}`}
+                    style={{
+                      "--conn-angle": `${rawAngle}deg`,
+                      "--conn-length": `${length}px`,
+                      "--conn-rotate": `${rotate}deg`,
+                      "--pod-angle": `${rawAngle}deg`,
+                    }}
+                  >
+                    <span className="connection-line" />
+                    <div
+                      className="pod-card pod-card--b"
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setDraggingPod(index);
+                      }}
+                    >
+                      <div className="pod-title">{pair.partnerRoot}</div>
+                      <div className="pod-subtitle">
+                        {pair.direction === "incoming" ? "Outgoing" : "Incoming"}
+                      </div>
                     </div>
                   </div>
-                  <div
-                    className="pod-drag-handle pod-drag--a"
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      setDraggingPod(index);
-                    }}
-                  />
-                  <div
-                    className="pod-drag-handle pod-drag--b"
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      setDraggingPod(index);
-                    }}
-                  />
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

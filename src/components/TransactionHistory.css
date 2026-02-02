@@ -93,7 +93,7 @@
 }
 
 .dataspace-visual {
-  height: 680px;
+  height: 830px;
   border-radius: 16px;
   background: radial-gradient(circle at top, rgba(30, 64, 175, 0.25), rgba(15, 23, 42, 0.9));
   display: flex;
@@ -134,53 +134,33 @@
   font-weight: 700;
   color: #e2e8f0;
   text-transform: uppercase;
-  position: relative;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   z-index: 3;
 }
 
 .dataspace-connection {
   position: absolute;
   inset: 0;
-  transform: rotate(var(--conn-angle));
-  transform-origin: center;
 }
 
 .connection-line {
   position: absolute;
   top: 50%;
-  left: 50%;
-  width: 100%;
+  left: 0;
+  width: var(--conn-length, 0px);
   height: 3px;
-  background: linear-gradient(90deg, rgba(251, 146, 60, 0.1), rgba(251, 146, 60, 0.85), rgba(251, 146, 60, 0.1));
-  transform: translate(-50%, -50%);
+  background: linear-gradient(90deg, rgba(251, 146, 60, 0.85), rgba(251, 146, 60, 0.1));
+  transform: translateY(-50%) rotate(var(--conn-rotate, 0deg));
+  transform-origin: left center;
   border-radius: 999px;
   opacity: 0.75;
   z-index: 2;
   pointer-events: none;
 }
 
-.dataspace-connection.conn-incoming .connection-line::after,
-.dataspace-connection.conn-outgoing .connection-line::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  width: 0;
-  height: 0;
-  border-top: 6px solid transparent;
-  border-bottom: 6px solid transparent;
-  transform: translateY(-50%);
-  z-index: 3;
-}
-
-.dataspace-connection.conn-incoming .connection-line::after {
-  left: 12%;
-  border-right: 12px solid rgba(251, 146, 60, 0.95);
-}
-
-.dataspace-connection.conn-outgoing .connection-line::after {
-  right: 12%;
-  border-left: 12px solid rgba(251, 146, 60, 0.95);
-}
 
 .ring-node {
   position: absolute;
@@ -211,23 +191,25 @@
 
 .pod-card {
   position: absolute;
-  top: 50%;
   width: 220px;
   background: rgba(15, 23, 42, 0.95);
   border-radius: 12px;
   padding: 10px 12px;
   border: 1px solid rgba(148, 163, 184, 0.35);
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.4);
-  transform: translateY(-50%) rotate(calc(-1 * var(--conn-angle)));
   z-index: 2;
 }
 
-.pod-card--a {
-  left: -16%;
-}
 
 .pod-card--b {
-  right: -16%;
+  top: 50%;
+  left: 50%;
+  transform:
+    rotate(var(--pod-angle))
+    translateX(calc(var(--ring-radius) + 120px))
+    rotate(calc(-1 * var(--pod-angle)))
+    translate(-50%, -50%);
+  cursor: grab;
 }
 
 .pod-title {
@@ -323,28 +305,21 @@
   font-family: "SF Mono", "Menlo", "Consolas", monospace;
   font-size: 0.85rem;
 }
-.pod-drag-handle {
-  position: absolute;
+
+
+
+
+
+
+.pod-card--self {
   top: 50%;
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  background: rgba(15, 23, 42, 0.9);
-  border: 1px solid rgba(148, 163, 184, 0.5);
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.4);
-  transform: translateY(-50%) rotate(calc(-1 * var(--conn-angle)));
-  cursor: grab;
-  z-index: 2;
-}
-
-.pod-drag-handle:active {
-  cursor: grabbing;
-}
-
-.pod-drag--a {
-  left: -2%;
-}
-
-.pod-drag--b {
-  right: -2%;
+  left: 50%;
+  transform:
+    rotate(180deg)
+    translateX(calc(var(--ring-radius) + 120px))
+    rotate(-180deg)
+    translate(-50%, -50%);
+  width: 220px;
+  text-align: center;
+  z-index: 4;
 }
