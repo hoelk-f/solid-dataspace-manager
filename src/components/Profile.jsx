@@ -34,9 +34,20 @@ import ConfirmModal from "./ConfirmModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUserCircle, faPen, faPlus, faTrash,
-  faEnvelope, faInbox, faBookOpen
+  faEnvelope, faInbox, faBookOpen, faSitemap
 } from "@fortawesome/free-solid-svg-icons";
-import { ensureCatalogStructure, resolveCatalogUrl, resetCatalog } from "../solidCatalog";
+import {
+  buildDefaultPrivateRegistry,
+  ensureCatalogStructure,
+  loadRegistryConfig,
+  loadRegistryMembersFromContainer,
+  REGISTRY_PRESETS,
+  resolveCatalogUrl,
+  resetCatalog,
+  saveRegistryConfig,
+  syncRegistryMembersInContainer,
+  syncRegistryMembership,
+} from "../solidCatalog";
 
 const VCARD_TYPE = "http://www.w3.org/2006/vcard/ns#type";
 
@@ -160,12 +171,71 @@ export default function Profile({ webId }) {
   const [catalogConfiguring, setCatalogConfiguring] = useState(false);
   const [catalogResetting, setCatalogResetting] = useState(false);
   const [showCatalogResetConfirm, setShowCatalogResetConfirm] = useState(false);
+  const [registryMode, setRegistryMode] = useState("research");
+  const [registrySelections, setRegistrySelections] = useState([]);
+  const [privateRegistryUrl, setPrivateRegistryUrl] = useState("");
+  const [privateRegistryMembers, setPrivateRegistryMembers] = useState([]);
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
 
   const showAlert = (msg) => {
     setAlertMessage(msg);
     setAlertOpen(true);
+  };
+
+  const toggleRegistrySelection = (url) => {
+    setRegistrySelections((prev) =>
+      prev.includes(url) ? prev.filter((item) => item !== url) : [...prev, url]
+    );
+  };
+
+  const normalizeRegistryMembers = (members) => {
+    const cleaned = Array.from(
+      new Set((members || []).map((value) => (value || "").trim()).filter(Boolean))
+    );
+    if (webId) {
+      const idx = cleaned.indexOf(webId);
+      if (idx !== -1) cleaned.splice(idx, 1);
+    }
+    return cleaned.map((value, idx) => ({
+      id: `member-${Date.now()}-${idx}`,
+      value,
+    }));
+  };
+
+  const getRegistryConfig = () => ({
+    mode: registryMode === "private" ? "private" : "research",
+    registries: registrySelections,
+    privateRegistry: privateRegistryUrl || buildDefaultPrivateRegistry(webId),
+  });
+
+  const addPrivateRegistryMember = () => {
+    setPrivateRegistryMembers((prev) => [
+      ...prev,
+      { id: `member-${Date.now()}-${prev.length}`, value: "" },
+    ]);
+  };
+
+  const updatePrivateRegistryMember = (id, value) => {
+    setPrivateRegistryMembers((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, value } : item))
+    );
+  };
+
+  const removePrivateRegistryMember = (id) => {
+    setPrivateRegistryMembers((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const refreshPrivateRegistryMembers = async () => {
+    if (registryMode !== "private" || !webId) return;
+    const targetUrl = privateRegistryUrl || buildDefaultPrivateRegistry(webId);
+    if (!targetUrl) return;
+    try {
+      const members = await loadRegistryMembersFromContainer(targetUrl, session.fetch);
+      setPrivateRegistryMembers(normalizeRegistryMembers(members));
+    } catch (err) {
+      console.warn("Failed to refresh private registry members:", err);
+    }
   };
 
   const profileDocUrl = webId ? webId.split("#")[0] : "";
@@ -223,6 +293,19 @@ export default function Profile({ webId }) {
         setInboxUrl(getUrl(me, LDP.inbox) || "");
         const resolvedCatalog = await resolveCatalogUrl(webId, session.fetch);
         setCatalogUrl(resolvedCatalog || "");
+        const registryConfig = await loadRegistryConfig(webId, session.fetch);
+        setRegistryMode(registryConfig.mode);
+        setRegistrySelections(registryConfig.registries || []);
+        setPrivateRegistryUrl(
+          registryConfig.privateRegistry || buildDefaultPrivateRegistry(webId)
+        );
+        if (registryConfig.mode === "private") {
+          const members = await loadRegistryMembersFromContainer(
+            registryConfig.privateRegistry || buildDefaultPrivateRegistry(webId),
+            session.fetch
+          );
+          setPrivateRegistryMembers(normalizeRegistryMembers(members));
+        }
       } catch (e) {
         console.error("Loading profile failed:", e);
         showAlert("Profile could not be loaded.");
@@ -249,6 +332,27 @@ export default function Profile({ webId }) {
     })();
     return () => { revoked = true; if (objectUrl) URL.revokeObjectURL(objectUrl); };
   }, [photoIri]);
+
+  useEffect(() => {
+    if (registryMode !== "private") return;
+    if (!privateRegistryUrl && webId) {
+      setPrivateRegistryUrl(buildDefaultPrivateRegistry(webId));
+    }
+  }, [registryMode, privateRegistryUrl, webId]);
+
+  useEffect(() => {
+    if (registryMode !== "private" || !webId) return;
+    const targetUrl = privateRegistryUrl || buildDefaultPrivateRegistry(webId);
+    if (!targetUrl) return;
+    (async () => {
+      try {
+        const members = await loadRegistryMembersFromContainer(targetUrl, session.fetch);
+        setPrivateRegistryMembers(normalizeRegistryMembers(members));
+      } catch (err) {
+        console.warn("Failed to load private registry members:", err);
+      }
+    })();
+  }, [registryMode]);
 
   const uploadAvatar = async (file) => {
     const podRoot = getPodRoot(webId);
@@ -321,6 +425,25 @@ export default function Profile({ webId }) {
       setProfileThing(me);
       setEditBasics(false);
       setEditContact(false);
+      const previousRegistryConfig = await loadRegistryConfig(webId, session.fetch);
+      const nextRegistryConfig = getRegistryConfig();
+      await saveRegistryConfig(webId, session.fetch, nextRegistryConfig);
+      await syncRegistryMembership(
+        webId,
+        session.fetch,
+        previousRegistryConfig,
+        nextRegistryConfig
+      );
+      if (nextRegistryConfig.mode === "private") {
+        const members = privateRegistryMembers
+          .map((item) => (item.value || "").trim())
+          .filter(Boolean);
+        const targetUrl =
+          nextRegistryConfig.privateRegistry || buildDefaultPrivateRegistry(webId);
+        await syncRegistryMembersInContainer(targetUrl, session.fetch, members, {
+          allowCreate: true,
+        });
+      }
       showAlert("Profile saved.");
     } catch (err) {
       console.error("Saving failed:", err);
@@ -431,8 +554,11 @@ export default function Profile({ webId }) {
     try {
       setCatalogConfiguring(true);
       const title = name ? `${name}'s Catalog` : "Solid Dataspace Catalog";
+      const registryConfig = getRegistryConfig();
+      await saveRegistryConfig(webId, session.fetch, registryConfig);
       const { catalogUrl: configuredUrl } = await ensureCatalogStructure(webId, session.fetch, {
         title,
+        registryConfig,
       });
       setCatalogUrl(configuredUrl || "");
       showAlert("Catalog initialized.");
@@ -449,8 +575,11 @@ export default function Profile({ webId }) {
     try {
       setCatalogResetting(true);
       const title = name ? `${name}'s Catalog` : "Solid Dataspace Catalog";
+      const registryConfig = getRegistryConfig();
+      await saveRegistryConfig(webId, session.fetch, registryConfig);
       const { catalogUrl: configuredUrl } = await resetCatalog(webId, session.fetch, {
         title,
+        registryConfig,
       });
       setCatalogUrl(configuredUrl || "");
       showAlert("Catalog reset completed.");
@@ -642,6 +771,91 @@ export default function Profile({ webId }) {
               {catalogResetting ? "Resetting..." : "Reset Catalog"}
             </button>
           </div>
+        </div>
+      </div>
+
+      <div className="pf-card">
+        <div className="pf-card__head">
+          <div className="pf-card__title">
+            <FontAwesomeIcon icon={faSitemap} className="pf-card__titleIcon" />
+            <span>Registry</span>
+          </div>
+        </div>
+        <div className="pf-card__body">
+          <div className="pf-toggle">
+            <button
+              type="button"
+              className={`pf-toggleBtn ${registryMode === "research" ? "active" : ""}`}
+              onClick={() => setRegistryMode("research")}
+            >
+              Research project
+            </button>
+            <button
+              type="button"
+              className={`pf-toggleBtn ${registryMode === "private" ? "active" : ""}`}
+              onClick={() => setRegistryMode("private")}
+            >
+              Private use
+            </button>
+          </div>
+
+          {registryMode === "research" ? (
+            <div className="pf-checklist">
+              {REGISTRY_PRESETS.map((preset) => (
+                <label key={preset.id} className="pf-check">
+                  <input
+                    type="checkbox"
+                    checked={registrySelections.includes(preset.url)}
+                    onChange={() => toggleRegistrySelection(preset.url)}
+                  />
+                  <span>{preset.label}</span>
+                </label>
+              ))}
+              <div className="pf-muted">Select one or more registries.</div>
+            </div>
+          ) : (
+            <div className="pf-privateRegistry">
+              <div className="pf-label">Registry URL</div>
+              <input
+                className="pf-input"
+                value={privateRegistryUrl}
+                placeholder={buildDefaultPrivateRegistry(webId)}
+                onChange={(e) => setPrivateRegistryUrl(e.target.value)}
+              />
+              <div className="pf-muted">
+                Default: a registry container in your pod root under <code>registry/</code>.
+              </div>
+              <div className="pf-subtitle" style={{ marginTop: 8 }}>
+                Members (WebIDs)
+              </div>
+              <div className="pf-list">
+                {privateRegistryMembers.map((member) => (
+                  <div key={member.id} className="pf-listRow">
+                    <input
+                      className="pf-input"
+                      type="text"
+                      placeholder="https://example.org/profile/card#me"
+                      value={member.value}
+                      onChange={(e) => updatePrivateRegistryMember(member.id, e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="pf-iconBtn danger"
+                      onClick={() => removePrivateRegistryMember(member.id)}
+                      title="Remove entry"
+                    >
+                      <FontAwesomeIcon icon={faTrash} />
+                    </button>
+                  </div>
+                ))}
+                <div className="pf-actions" style={{ justifyContent: "flex-start" }}>
+                  <button type="button" className="pf-btn ghost" onClick={addPrivateRegistryMember}>
+                    <FontAwesomeIcon icon={faPlus} /> add WebID
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

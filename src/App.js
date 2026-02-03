@@ -13,7 +13,7 @@ import Notifications from "./components/Notifications";
 import DecisionInbox from "./components/DecisionInbox";
 import TransactionHistory from "./components/TransactionHistory";
 import OnboardingWizard from "./components/OnboardingWizard";
-import { resolveCatalogUrl } from "./solidCatalog";
+import { buildDefaultPrivateRegistry, loadRegistryConfig, resolveCatalogUrl } from "./solidCatalog";
 
 const App = () => {
   const [webId, setWebId] = useState("");
@@ -93,7 +93,28 @@ const App = () => {
           missingCatalog = true;
         }
 
-        setOnboardingRequired(missingBasics || missingEmail || missingInbox || missingCatalog);
+        let missingRegistry = false;
+        try {
+          const registryConfig = await loadRegistryConfig(webId, session.fetch);
+          const privateUrl =
+            registryConfig.privateRegistry || buildDefaultPrivateRegistry(webId);
+          if (!privateUrl) {
+            missingRegistry = true;
+          } else {
+            try {
+              await getSolidDataset(privateUrl, { fetch: session.fetch });
+            } catch (err) {
+              const status = err?.statusCode || err?.response?.status;
+              if (status === 404) missingRegistry = true;
+            }
+          }
+        } catch {
+          missingRegistry = true;
+        }
+
+        setOnboardingRequired(
+          missingBasics || missingEmail || missingInbox || missingCatalog || missingRegistry
+        );
       } catch (err) {
         console.error("Profile completeness check failed:", err);
         setOnboardingRequired(true);

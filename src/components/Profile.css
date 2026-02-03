@@ -106,3 +106,26 @@
 .pf-actions{ display:flex; justify-content:flex-end; margin-top:4px; }
 
 .pf-iconBtn.danger{ color:var(--danger); }
+
+.pf-toggle{
+  display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;
+}
+.pf-toggleBtn{
+  border:1px solid var(--border);
+  background:var(--card);
+  color:var(--text);
+  padding:8px 12px;
+  border-radius:999px;
+  font-weight:700;
+  cursor:pointer;
+}
+.pf-toggleBtn.active{
+  background:var(--primary-ghost);
+  color:var(--primary);
+  border-color:#c5dbff;
+  box-shadow:0 0 0 3px var(--ring);
+}
+.pf-checklist{ display:grid; gap:8px; }
+.pf-check{ display:flex; align-items:center; gap:8px; font-weight:600; color:var(--text); }
+.pf-check input{ accent-color:var(--primary); }
+.pf-privateRegistry{ display:grid; gap:8px; }

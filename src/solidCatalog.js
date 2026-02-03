@@ -3,6 +3,7 @@ import {
   createContainerAt,
   createSolidDataset,
   createThing,
+  getStringNoLocale,
   getSolidDataset,
   getSolidDatasetWithAcl,
   getContainedResourceUrlAll,
@@ -31,8 +32,28 @@ const DATASET_CONTAINER = "catalog/ds/";
 const SERIES_CONTAINER = "catalog/series/";
 const RECORDS_CONTAINER = "catalog/records/";
 const CATALOG_DOC = "catalog/cat.ttl";
-const CENTRAL_REGISTRY_CONTAINER =
-  "https://tmdt-solid-community-server.de/semanticdatacatalog/public/registry/";
+const SDM_NS = "https://w3id.org/solid-dataspace-manager#";
+const SDM_REGISTRY_MODE = `${SDM_NS}registryMode`;
+const SDM_REGISTRY = `${SDM_NS}registry`;
+const SDM_PRIVATE_REGISTRY = `${SDM_NS}privateRegistry`;
+
+export const REGISTRY_PRESETS = [
+  {
+    id: "stadt-wuppertal",
+    label: "Stadt Wuppertal",
+    url: "https://tmdt-solid-community-server.de/semanticdatacatalog/public/stadt-wuppertal",
+  },
+  {
+    id: "dace",
+    label: "DACE",
+    url: "https://tmdt-solid-community-server.de/semanticdatacatalog/public/dace",
+  },
+  {
+    id: "timberconnect",
+    label: "TimberConnect",
+    url: "https://tmdt-solid-community-server.de/semanticdatacatalog/public/timberconnect",
+  },
+];
 
 export const getPodRoot = (webId) => {
   const url = new URL(webId);
@@ -41,6 +62,21 @@ export const getPodRoot = (webId) => {
   const baseSegments = profileIndex > -1 ? segments.slice(0, profileIndex) : segments;
   const basePath = baseSegments.length ? `/${baseSegments.join("/")}/` : "/";
   return `${url.origin}${basePath}`;
+};
+
+export const buildDefaultPrivateRegistry = (webId) => {
+  if (!webId) return "";
+  return `${getPodRoot(webId)}registry/`;
+};
+
+const normalizeContainerUrl = (value) => {
+  if (!value) return "";
+  try {
+    const url = new URL(value);
+    return url.href.endsWith("/") ? url.href : `${url.href}/`;
+  } catch {
+    return value.endsWith("/") ? value : `${value}/`;
+  }
 };
 
 const ensureContainer = async (containerUrl, fetch) => {
@@ -109,6 +145,291 @@ const setCatalogLinkInProfile = async (webId, catalogUrl, fetch) => {
   await saveSolidDatasetAt(profileDocUrl, updatedProfile, { fetch });
 };
 
+export const loadRegistryConfig = async (webId, fetch) => {
+  if (!webId || !fetch) {
+    return { mode: "research", registries: [], privateRegistry: "" };
+  }
+  const profileDocUrl = webId.split("#")[0];
+  try {
+    const profileDataset = await getSolidDataset(profileDocUrl, { fetch });
+    const profileThing = getThing(profileDataset, webId);
+    const mode = (getStringNoLocale(profileThing, SDM_REGISTRY_MODE) || "research").toLowerCase();
+    const registries = (getUrlAll(profileThing, SDM_REGISTRY) || [])
+      .filter(Boolean)
+      .map((url) => url.replace(/\/+$/, ""));
+    const privateRegistry =
+      getUrl(profileThing, SDM_PRIVATE_REGISTRY) || buildDefaultPrivateRegistry(webId);
+    return {
+      mode: mode === "private" ? "private" : "research",
+      registries,
+      privateRegistry,
+    };
+  } catch (err) {
+    console.warn("Failed to load registry config from profile:", err);
+    return {
+      mode: "research",
+      registries: [],
+      privateRegistry: buildDefaultPrivateRegistry(webId),
+    };
+  }
+};
+
+export const saveRegistryConfig = async (webId, fetch, config) => {
+  if (!webId || !fetch) return;
+  const profileDocUrl = webId.split("#")[0];
+  const profileDataset = await getSolidDataset(profileDocUrl, { fetch });
+  let profileThing = getThing(profileDataset, webId);
+  if (!profileThing) {
+    profileThing = createThing({ url: webId });
+  }
+
+  const mode = config?.mode === "private" ? "private" : "research";
+  const registries = (config?.registries || [])
+    .filter(Boolean)
+    .map((url) => url.replace(/\/+$/, ""));
+  const privateRegistry = config?.privateRegistry || buildDefaultPrivateRegistry(webId);
+
+  profileThing = removeAll(profileThing, SDM_REGISTRY_MODE);
+  profileThing = setStringNoLocale(profileThing, SDM_REGISTRY_MODE, mode);
+  profileThing = removeAll(profileThing, SDM_REGISTRY);
+  registries.forEach((url) => {
+    profileThing = addUrl(profileThing, SDM_REGISTRY, url);
+  });
+  profileThing = removeAll(profileThing, SDM_PRIVATE_REGISTRY);
+  if (privateRegistry) {
+    profileThing = setUrl(profileThing, SDM_PRIVATE_REGISTRY, privateRegistry);
+  }
+
+  const updatedProfile = setThing(profileDataset, profileThing);
+  await saveSolidDatasetAt(profileDocUrl, updatedProfile, { fetch });
+};
+
+const ensureRegistryContainer = async (containerUrl, fetch) => {
+  await ensureContainer(containerUrl, fetch);
+  await makePublicReadable(containerUrl, fetch);
+};
+
+const resolveRegistryConfig = async (webId, fetch, override) => {
+  const base = override || (await loadRegistryConfig(webId, fetch));
+  const mode = base?.mode === "private" ? "private" : "research";
+  const registries = (base?.registries || []).filter(Boolean);
+  const privateRegistry =
+    base?.privateRegistry || buildDefaultPrivateRegistry(webId);
+  return { mode, registries, privateRegistry };
+};
+
+const registerWebIdInRegistryContainer = async (
+  containerUrl,
+  fetch,
+  memberWebId,
+  { allowCreate } = {}
+) => {
+  const normalizedUrl = normalizeContainerUrl(containerUrl);
+  if (!normalizedUrl || !memberWebId) return;
+
+  if (allowCreate) {
+    await ensureRegistryContainer(normalizedUrl, fetch);
+  }
+
+  const containerDataset = await getSolidDataset(normalizedUrl, { fetch });
+  const resources = getContainedResourceUrlAll(containerDataset);
+  for (const resourceUrl of resources) {
+    try {
+      const memberDataset = await getSolidDataset(resourceUrl, { fetch });
+      const memberThing =
+        getThing(memberDataset, `${resourceUrl}#it`) || getThingAll(memberDataset)[0];
+        const existingWebId = memberThing ? getUrl(memberThing, FOAF.member) : "";
+        if (existingWebId === memberWebId) return;
+    } catch {
+      // Ignore malformed entries.
+    }
+  }
+
+  const turtle = [
+    "@prefix foaf: <http://xmlns.com/foaf/0.1/>.",
+    "@prefix dcterms: <http://purl.org/dc/terms/>.",
+    "",
+    "<#it> a foaf:Group ;",
+    `  foaf:member <${memberWebId}> ;`,
+    `  dcterms:modified "${new Date().toISOString()}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .`,
+    "",
+  ].join("\n");
+
+  const res = await fetch(normalizedUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "text/turtle",
+      "Slug": `member-${encodeURIComponent(memberWebId)}`,
+    },
+    body: turtle,
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to write registry (${normalizedUrl}): ${res.status}`);
+  }
+};
+
+const registerWebIdInRegistries = async (webId, fetch, registryConfig) => {
+  if (!webId) return;
+  const config = await resolveRegistryConfig(webId, fetch, registryConfig);
+  let containers = [];
+  let allowCreate = false;
+
+  if (config.mode === "private") {
+    allowCreate = true;
+    containers = [config.privateRegistry];
+  } else {
+    containers = config.registries;
+  }
+
+  const normalized = Array.from(
+    new Set(containers.map(normalizeContainerUrl).filter(Boolean))
+  );
+  if (!normalized.length) return;
+
+  for (const containerUrl of normalized) {
+    try {
+      await registerWebIdInRegistryContainer(containerUrl, fetch, webId, { allowCreate });
+    } catch (err) {
+      throw new Error(
+        `Failed to access registry (${containerUrl}): ${err?.message || err}`
+      );
+    }
+  }
+};
+
+const removeWebIdFromRegistryContainer = async (containerUrl, fetch, webId) => {
+  const normalizedUrl = normalizeContainerUrl(containerUrl);
+  if (!normalizedUrl) return;
+  try {
+    const containerDataset = await getSolidDataset(normalizedUrl, { fetch });
+    const resources = getContainedResourceUrlAll(containerDataset);
+    for (const resourceUrl of resources) {
+      try {
+        const memberDataset = await getSolidDataset(resourceUrl, { fetch });
+        const memberThing =
+          getThing(memberDataset, `${resourceUrl}#it`) || getThingAll(memberDataset)[0];
+        const memberWebId = memberThing ? getUrl(memberThing, FOAF.member) : "";
+        if (memberWebId === webId) {
+          await deleteFile(resourceUrl, { fetch });
+        }
+      } catch {
+        // Ignore malformed entries.
+      }
+    }
+  } catch (err) {
+    const status = err?.statusCode || err?.response?.status;
+    if (status === 404) return;
+    console.warn("Failed to remove member from registry", normalizedUrl, err);
+  }
+};
+
+export const syncRegistryMembership = async (
+  webId,
+  fetch,
+  previousConfig,
+  nextConfig
+) => {
+  if (!webId || !fetch) return;
+  const prev = await resolveRegistryConfig(webId, fetch, previousConfig);
+  const next = await resolveRegistryConfig(webId, fetch, nextConfig);
+
+  const prevContainers = new Set(
+    (prev.mode === "private" ? [prev.privateRegistry] : prev.registries)
+      .map(normalizeContainerUrl)
+      .filter(Boolean)
+  );
+  const nextContainers = new Set(
+    (next.mode === "private" ? [next.privateRegistry] : next.registries)
+      .map(normalizeContainerUrl)
+      .filter(Boolean)
+  );
+
+  for (const containerUrl of prevContainers) {
+    if (!nextContainers.has(containerUrl)) {
+      await removeWebIdFromRegistryContainer(containerUrl, fetch, webId);
+    }
+  }
+
+  const allowCreate = next.mode === "private";
+  for (const containerUrl of nextContainers) {
+    await registerWebIdInRegistryContainer(containerUrl, fetch, webId, { allowCreate });
+  }
+};
+
+export const loadRegistryMembersFromContainer = async (containerUrl, fetch) => {
+  const normalizedUrl = normalizeContainerUrl(containerUrl);
+  if (!normalizedUrl || !fetch) return [];
+  try {
+    const containerDataset = await getSolidDataset(normalizedUrl, { fetch });
+    const resourceUrls = getContainedResourceUrlAll(containerDataset);
+    const members = new Set();
+    for (const resourceUrl of resourceUrls) {
+      try {
+        const memberDataset = await getSolidDataset(resourceUrl, { fetch });
+        const memberThing =
+          getThing(memberDataset, `${resourceUrl}#it`) || getThingAll(memberDataset)[0];
+        const memberWebId = memberThing ? getUrl(memberThing, FOAF.member) : "";
+        if (memberWebId) members.add(memberWebId);
+      } catch {
+        // Ignore malformed entries.
+      }
+    }
+    return Array.from(members);
+  } catch (err) {
+    const status = err?.statusCode || err?.response?.status;
+    if (status === 404) return [];
+    console.warn("Failed to load registry container", normalizedUrl, err);
+    return [];
+  }
+};
+
+export const syncRegistryMembersInContainer = async (
+  containerUrl,
+  fetch,
+  members,
+  { allowCreate } = {}
+) => {
+  const normalizedUrl = normalizeContainerUrl(containerUrl);
+  if (!normalizedUrl || !fetch) return;
+  const cleanedMembers = Array.from(
+    new Set((members || []).map((m) => (m || "").trim()).filter(Boolean))
+  );
+
+  if (allowCreate) {
+    await ensureRegistryContainer(normalizedUrl, fetch);
+  }
+
+  const containerDataset = await getSolidDataset(normalizedUrl, { fetch });
+  const resourceUrls = getContainedResourceUrlAll(containerDataset);
+  const existing = new Map();
+  for (const resourceUrl of resourceUrls) {
+    try {
+      const memberDataset = await getSolidDataset(resourceUrl, { fetch });
+      const memberThing =
+        getThing(memberDataset, `${resourceUrl}#it`) || getThingAll(memberDataset)[0];
+      const memberWebId = memberThing ? getUrl(memberThing, FOAF.member) : "";
+      if (memberWebId) {
+        existing.set(memberWebId, resourceUrl);
+      }
+    } catch {
+      // Ignore malformed entries.
+    }
+  }
+
+  for (const [memberWebId, resourceUrl] of existing.entries()) {
+    if (!cleanedMembers.includes(memberWebId)) {
+      await deleteFile(resourceUrl, { fetch });
+      existing.delete(memberWebId);
+    }
+  }
+
+  for (const memberWebId of cleanedMembers) {
+    if (!existing.has(memberWebId)) {
+      await registerWebIdInRegistryContainer(normalizedUrl, fetch, memberWebId, { allowCreate });
+    }
+  }
+};
+
 export const getCatalogDocUrl = (webId) => `${getPodRoot(webId)}${CATALOG_DOC}`;
 export const getCatalogUrl = (webId) => `${getCatalogDocUrl(webId)}#it`;
 export const resolveCatalogUrl = async (webId, fetch) => {
@@ -125,7 +446,11 @@ export const resolveCatalogUrl = async (webId, fetch) => {
   return getCatalogUrl(webId);
 };
 
-export const ensureCatalogStructure = async (webId, fetch, { title, description } = {}) => {
+export const ensureCatalogStructure = async (
+  webId,
+  fetch,
+  { title, description, registryConfig } = {}
+) => {
   const podRoot = getPodRoot(webId);
   await ensureContainer(`${podRoot}${CATALOG_CONTAINER}`, fetch);
   await ensureContainer(`${podRoot}${DATASET_CONTAINER}`, fetch);
@@ -179,57 +504,9 @@ export const ensureCatalogStructure = async (webId, fetch, { title, description 
   await makePublicReadable(`${podRoot}${CATALOG_CONTAINER}`, fetch);
 
   await setCatalogLinkInProfile(webId, catalogUrl, fetch);
-  await registerWebIdInCentralRegistry(webId, fetch);
+  await registerWebIdInRegistries(webId, fetch, registryConfig);
 
   return { catalogDocUrl, catalogUrl };
-};
-
-const registerWebIdInCentralRegistry = async (webId, fetch) => {
-  if (!webId) return;
-  const containerUrl = CENTRAL_REGISTRY_CONTAINER;
-  try {
-    const containerDataset = await getSolidDataset(containerUrl, { fetch });
-    const resources = getContainedResourceUrlAll(containerDataset);
-    for (const resourceUrl of resources) {
-      try {
-        const memberDataset = await getSolidDataset(resourceUrl, { fetch });
-        const memberThing =
-          getThing(memberDataset, `${resourceUrl}#it`) || getThingAll(memberDataset)[0];
-        const memberWebId = memberThing ? getUrl(memberThing, FOAF.member) : "";
-        if (memberWebId === webId) return;
-      } catch {
-        // Ignore malformed entries.
-      }
-    }
-
-    const turtle = [
-      "@prefix foaf: <http://xmlns.com/foaf/0.1/>.",
-      "@prefix dcterms: <http://purl.org/dc/terms/>.",
-      "",
-      "<#it> a foaf:Group ;",
-      `  foaf:member <${webId}> ;`,
-      `  dcterms:modified "${new Date().toISOString()}"^^<http://www.w3.org/2001/XMLSchema#dateTime> .`,
-      "",
-    ].join("\n");
-
-    const res = await fetch(containerUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "text/turtle",
-        "Slug": `member-${encodeURIComponent(webId)}`,
-      },
-      body: turtle,
-    });
-    if (!res.ok) {
-      throw new Error(
-        `Failed to write central registry (${containerUrl}): ${res.status}`
-      );
-    }
-  } catch (err) {
-    throw new Error(
-      `Failed to access central registry (${containerUrl}): ${err?.message || err}`
-    );
-  }
 };
 
 const deleteContainerContents = async (containerUrl, fetch) => {
@@ -253,7 +530,11 @@ const deleteContainerContents = async (containerUrl, fetch) => {
   }
 };
 
-export const resetCatalog = async (webId, fetch, { title, description } = {}) => {
+export const resetCatalog = async (
+  webId,
+  fetch,
+  { title, description, registryConfig } = {}
+) => {
   const podRoot = getPodRoot(webId);
   const catalogContainerUrl = `${podRoot}${CATALOG_CONTAINER}`;
   try {
@@ -266,5 +547,5 @@ export const resetCatalog = async (webId, fetch, { title, description } = {}) =>
     }
   }
 
-  return ensureCatalogStructure(webId, fetch, { title, description });
+  return ensureCatalogStructure(webId, fetch, { title, description, registryConfig });
 };
