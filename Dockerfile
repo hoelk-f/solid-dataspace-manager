@@ -3,8 +3,12 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install
+ARG NPM_TOKEN
+COPY package.json ./
+RUN echo "@hoelk-f:registry=https://npm.pkg.github.com/" > .npmrc \
+    && echo "//npm.pkg.github.com/:_authToken=${NPM_TOKEN}" >> .npmrc \
+    && npm install \
+    && rm -f .npmrc
 
 COPY . .
 

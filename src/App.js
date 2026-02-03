@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import session from "./solidSession";
 import "./App.css";
-import "solid-data-manager/embed.css";
+import "@hoelk-f/solid-data-manager/embed.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
-import { DataManagerEmbed, setSession as setDataManagerSession } from "solid-data-manager/embed";
+import { DataManagerEmbed, setSession as setDataManagerSession } from "@hoelk-f/solid-data-manager/embed";
 import ExternalHost from "./components/ExternalHost";
 import Info from "./components/Info";
 import LoginScreen from "./components/LoginScreen";
