@@ -33,13 +33,6 @@ const RECORDS_CONTAINER = "catalog/records/";
 const CATALOG_DOC = "catalog/cat.ttl";
 const CENTRAL_REGISTRY_CONTAINER =
   "https://tmdt-solid-community-server.de/semanticdatacatalog/public/registry/";
-const SOLID = {
-  publicTypeIndex: "http://www.w3.org/ns/solid/terms#publicTypeIndex",
-  TypeIndex: "http://www.w3.org/ns/solid/terms#TypeIndex",
-  TypeRegistration: "http://www.w3.org/ns/solid/terms#TypeRegistration",
-  forClass: "http://www.w3.org/ns/solid/terms#forClass",
-  instance: "http://www.w3.org/ns/solid/terms#instance",
-};
 
 export const getPodRoot = (webId) => {
   const url = new URL(webId);
@@ -102,55 +95,18 @@ const makePublicReadable = async (url, fetch) => {
   }
 };
 
-const ensurePublicTypeIndex = async (webId, fetch) => {
+const setCatalogLinkInProfile = async (webId, catalogUrl, fetch) => {
+  if (!webId || !catalogUrl) return;
   const profileDocUrl = webId.split("#")[0];
   const profileDataset = await getSolidDataset(profileDocUrl, { fetch });
   let profileThing = getThing(profileDataset, webId);
   if (!profileThing) {
     profileThing = createThing({ url: webId });
   }
-
-  let publicTypeIndexUrl = getUrl(profileThing, SOLID.publicTypeIndex);
-  if (!publicTypeIndexUrl) {
-    const podRoot = getPodRoot(webId);
-    const settingsContainer = `${podRoot}settings/`;
-    await ensureContainer(settingsContainer, fetch);
-    publicTypeIndexUrl = `${settingsContainer}publicTypeIndex.ttl`;
-    const typeIndexDataset = createSolidDataset();
-    let typeIndexThing = createThing({ url: `${publicTypeIndexUrl}#it` });
-    typeIndexThing = addUrl(typeIndexThing, RDF.type, SOLID.TypeIndex);
-    typeIndexThing = setStringNoLocale(typeIndexThing, DCTERMS.title, "Public Type Index");
-    const withThing = setThing(typeIndexDataset, typeIndexThing);
-    await saveSolidDatasetAt(publicTypeIndexUrl, withThing, { fetch });
-    await makePublicReadable(publicTypeIndexUrl, fetch);
-
-    profileThing = setUrl(profileThing, SOLID.publicTypeIndex, publicTypeIndexUrl);
-    const updatedProfile = setThing(profileDataset, profileThing);
-    await saveSolidDatasetAt(profileDocUrl, updatedProfile, { fetch });
-  }
-
-  return publicTypeIndexUrl;
-};
-
-const registerCatalogInTypeIndex = async (publicTypeIndexUrl, catalogUrl, fetch) => {
-  const ptiDataset = await getSolidDataset(publicTypeIndexUrl, { fetch });
-  const existing = getThingAll(ptiDataset).find((thing) => {
-    const types = getUrlAll(thing, RDF.type);
-    if (!types.includes(SOLID.TypeRegistration)) return false;
-    const forClass = getUrl(thing, SOLID.forClass);
-    return forClass === DCAT.Catalog;
-  });
-
-  let registration = existing || createThing({ url: `${publicTypeIndexUrl}#catalog` });
-  registration = removeAll(registration, RDF.type);
-  registration = addUrl(registration, RDF.type, SOLID.TypeRegistration);
-  registration = removeAll(registration, SOLID.forClass);
-  registration = setUrl(registration, SOLID.forClass, DCAT.Catalog);
-  registration = removeAll(registration, SOLID.instance);
-  registration = setUrl(registration, SOLID.instance, catalogUrl);
-
-  const updated = setThing(ptiDataset, registration);
-  await saveSolidDatasetAt(publicTypeIndexUrl, updated, { fetch });
+  profileThing = removeAll(profileThing, DCAT.catalog);
+  profileThing = setUrl(profileThing, DCAT.catalog, catalogUrl);
+  const updatedProfile = setThing(profileDataset, profileThing);
+  await saveSolidDatasetAt(profileDocUrl, updatedProfile, { fetch });
 };
 
 export const getCatalogDocUrl = (webId) => `${getPodRoot(webId)}${CATALOG_DOC}`;
@@ -160,21 +116,10 @@ export const resolveCatalogUrl = async (webId, fetch) => {
     const profileDocUrl = webId.split("#")[0];
     const profileDoc = await getSolidDataset(profileDocUrl, { fetch });
     const profileThing = getThing(profileDoc, webId);
-    const publicTypeIndexUrl = profileThing
-      ? getUrl(profileThing, SOLID.publicTypeIndex)
-      : null;
-    if (publicTypeIndexUrl) {
-      const ptiDataset = await getSolidDataset(publicTypeIndexUrl, { fetch });
-      const registration = getThingAll(ptiDataset).find((thing) => {
-        const types = getUrlAll(thing, RDF.type);
-        const forClass = getUrl(thing, SOLID.forClass);
-        return types.includes(SOLID.TypeRegistration) && forClass === DCAT.Catalog;
-      });
-      const instance = registration ? getUrl(registration, SOLID.instance) : null;
-      if (instance) return instance;
-    }
+    const profileCatalog = profileThing ? getUrl(profileThing, DCAT.catalog) : null;
+    if (profileCatalog) return profileCatalog;
   } catch (err) {
-    console.warn("Failed to resolve catalog URL from type index:", err);
+    console.warn("Failed to resolve catalog URL from profile:", err);
   }
 
   return getCatalogUrl(webId);
@@ -233,8 +178,7 @@ export const ensureCatalogStructure = async (webId, fetch, { title, description 
   await makePublicReadable(catalogDocUrl, fetch);
   await makePublicReadable(`${podRoot}${CATALOG_CONTAINER}`, fetch);
 
-  const publicTypeIndexUrl = await ensurePublicTypeIndex(webId, fetch);
-  await registerCatalogInTypeIndex(publicTypeIndexUrl, catalogUrl, fetch);
+  await setCatalogLinkInProfile(webId, catalogUrl, fetch);
   await registerWebIdInCentralRegistry(webId, fetch);
 
   return { catalogDocUrl, catalogUrl };
