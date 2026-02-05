@@ -225,10 +225,15 @@ function Sidebar({ webId }) {
         </Link>
 
         <div className="sb-section">Applications</div>
-        <Link to="/web/urban-heat-monitoring" className="sb-link">
+        <a
+          href="/smart-city-urban-heat-monitoring/"
+          className="sb-link"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           <FontAwesomeIcon icon={faTemperatureHigh} />
           <span>Urban Heat Monitoring</span>
-        </Link>
+        </a>
 
         <div className="sb-section">Miscellaneous</div>
         <a
