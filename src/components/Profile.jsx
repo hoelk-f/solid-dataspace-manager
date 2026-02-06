@@ -39,6 +39,7 @@ import {
 import {
   buildDefaultPrivateRegistry,
   ensureCatalogStructure,
+  ensurePrivateRegistryContainer,
   loadRegistryConfig,
   loadRegistryMembersFromContainer,
   REGISTRY_PRESETS,
@@ -428,6 +429,11 @@ export default function Profile({ webId }) {
       const previousRegistryConfig = await loadRegistryConfig(webId, session.fetch);
       const nextRegistryConfig = getRegistryConfig();
       await saveRegistryConfig(webId, session.fetch, nextRegistryConfig);
+      await ensurePrivateRegistryContainer(
+        webId,
+        session.fetch,
+        nextRegistryConfig.privateRegistry
+      );
       await syncRegistryMembership(
         webId,
         session.fetch,
@@ -556,6 +562,11 @@ export default function Profile({ webId }) {
       const title = name ? `${name}'s Catalog` : "Solid Dataspace Catalog";
       const registryConfig = getRegistryConfig();
       await saveRegistryConfig(webId, session.fetch, registryConfig);
+      await ensurePrivateRegistryContainer(
+        webId,
+        session.fetch,
+        registryConfig.privateRegistry
+      );
       const { catalogUrl: configuredUrl } = await ensureCatalogStructure(webId, session.fetch, {
         title,
         registryConfig,
@@ -577,6 +588,11 @@ export default function Profile({ webId }) {
       const title = name ? `${name}'s Catalog` : "Solid Dataspace Catalog";
       const registryConfig = getRegistryConfig();
       await saveRegistryConfig(webId, session.fetch, registryConfig);
+      await ensurePrivateRegistryContainer(
+        webId,
+        session.fetch,
+        registryConfig.privateRegistry
+      );
       const { catalogUrl: configuredUrl } = await resetCatalog(webId, session.fetch, {
         title,
         registryConfig,

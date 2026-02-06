@@ -213,6 +213,19 @@ const ensureRegistryContainer = async (containerUrl, fetch) => {
   await makePublicReadable(containerUrl, fetch);
 };
 
+export const ensurePrivateRegistryContainer = async (
+  webId,
+  fetch,
+  privateRegistryUrl
+) => {
+  if (!webId || !fetch) return "";
+  const target =
+    normalizeContainerUrl(privateRegistryUrl || buildDefaultPrivateRegistry(webId));
+  if (!target) return "";
+  await ensureRegistryContainer(target, fetch);
+  return target;
+};
+
 const resolveRegistryConfig = async (webId, fetch, override) => {
   const base = override || (await loadRegistryConfig(webId, fetch));
   const mode = base?.mode === "private" ? "private" : "research";

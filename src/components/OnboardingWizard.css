@@ -243,6 +243,43 @@
   margin-top: 2px;
 }
 
+.onboarding-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.onboarding-toggleBtn {
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #1e293b;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.onboarding-toggleBtn.active {
+  border-color: #c5dbff;
+  background: #eaf2ff;
+  color: #1d4ed8;
+}
+
+.onboarding-checklist {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.onboarding-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #1e293b;
+  font-weight: 600;
+}
+
 .onboarding-actions {
   display: flex;
   justify-content: space-between;

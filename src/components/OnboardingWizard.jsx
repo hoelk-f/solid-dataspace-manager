@@ -27,9 +27,10 @@ import { FOAF, VCARD, LDP } from "@inrupt/vocab-common-rdf";
 import session from "../solidSession";
 import {
   buildDefaultPrivateRegistry,
-  DEFAULT_RESEARCH_REGISTRIES,
   ensureCatalogStructure,
+  ensurePrivateRegistryContainer,
   loadRegistryConfig,
+  REGISTRY_PRESETS,
   resolveCatalogUrl,
   saveRegistryConfig,
 } from "../solidCatalog";
@@ -93,6 +94,9 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
   const [inboxAcknowledged, setInboxAcknowledged] = useState(false);
   const [catalogUrl, setCatalogUrl] = useState("");
   const [catalogAcknowledged, setCatalogAcknowledged] = useState(false);
+  const [registryMode, setRegistryMode] = useState("private");
+  const [registrySelections, setRegistrySelections] = useState([]);
+  const [researchRegistryAcknowledged, setResearchRegistryAcknowledged] = useState(false);
   const [privateRegistryUrl, setPrivateRegistryUrl] = useState("");
   const [privateRegistryAcknowledged, setPrivateRegistryAcknowledged] = useState(false);
 
@@ -108,11 +112,17 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
   const basicsComplete = Boolean(name.trim() && org.trim() && role.trim());
   const emailsComplete = normalizeEmails(emails).length > 0;
   const defaultPrivateRegistry = buildDefaultPrivateRegistry(webId);
+  const registrySelectionsComplete = registrySelections.length > 0;
   const getRegistryConfig = () => ({
-    mode: "research",
-    registries: DEFAULT_RESEARCH_REGISTRIES,
+    mode: registryMode === "private" ? "private" : "research",
+    registries: registrySelections,
     privateRegistry: privateRegistryUrl || defaultPrivateRegistry,
   });
+  const toggleRegistrySelection = (url) => {
+    setRegistrySelections((prev) =>
+      prev.includes(url) ? prev.filter((item) => item !== url) : [...prev, url]
+    );
+  };
   const loadProfile = async () => {
     if (!webId) return;
     setLoading(true);
@@ -175,20 +185,31 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
       setCatalogAcknowledged(hasCatalog);
 
       const registryConfig = await loadRegistryConfig(webId, session.fetch);
+      const hasResearchSelection = (registryConfig.registries || []).length > 0;
+      const nextMode =
+        registryConfig.mode === "private" || hasResearchSelection
+          ? registryConfig.mode
+          : "private";
+      setRegistryMode(nextMode || "private");
+      setRegistrySelections(registryConfig.registries || []);
       setPrivateRegistryUrl(
         registryConfig.privateRegistry || buildDefaultPrivateRegistry(webId)
       );
       setPrivateRegistryAcknowledged(
         Boolean(registryConfig.privateRegistry || buildDefaultPrivateRegistry(webId))
       );
+      setResearchRegistryAcknowledged(Boolean((registryConfig.registries || []).length));
 
       const missingBasics = !(nm && org && role);
       const missingEmail = allEmails.length === 0;
       const missingInbox = !inbox;
       const missingCatalog = !hasCatalog;
-      const registryMissing = !(
-        (registryConfig.privateRegistry || buildDefaultPrivateRegistry(webId)).trim()
-      );
+      const registryMissing =
+        registryConfig.mode === "private"
+          ? !(
+            (registryConfig.privateRegistry || buildDefaultPrivateRegistry(webId)).trim()
+          )
+          : !(registryConfig.registries || []).length;
 
       if (!missingBasics && !missingEmail && !missingInbox && !missingCatalog && !registryMissing) {
         onComplete();
@@ -235,10 +256,11 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
   }, [photoIri]);
 
   useEffect(() => {
+    if (registryMode !== "private") return;
     if (!privateRegistryUrl && webId) {
       setPrivateRegistryUrl(buildDefaultPrivateRegistry(webId));
     }
-  }, [privateRegistryUrl, webId]);
+  }, [registryMode, privateRegistryUrl, webId]);
 
   const uploadAvatar = async (file) => {
     const podRoot = getPodRoot(webId);
@@ -383,6 +405,11 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
     const title = name ? `${name}'s Catalog` : "Solid Dataspace Catalog";
     const registryConfig = getRegistryConfig();
     await saveRegistryConfig(webId, session.fetch, registryConfig);
+    await ensurePrivateRegistryContainer(
+      webId,
+      session.fetch,
+      registryConfig.privateRegistry
+    );
     const { catalogUrl: configuredUrl } = await ensureCatalogStructure(webId, session.fetch, {
       title,
       registryConfig,
@@ -560,9 +587,9 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
 
         {step === 3 && (
           <div className="onboarding-section">
-            <h3>Solid Inbox & Catalog</h3>
+            <h3>Solid Inbox, Catalog & Registry</h3>
             <p>
-              Configure your Solid inbox, catalog, and private registry so access requests and
+              Configure your Solid inbox, catalog, and registry settings so access requests and
               metadata stay in your pod.
             </p>
             <div className="onboarding-inbox">
@@ -603,22 +630,77 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
             </div>
 
             <div className="onboarding-inbox" style={{ marginTop: 18 }}>
-              <div className="onboarding-inbox__label">Private Registry</div>
-              <div className="onboarding-inbox__value">
-                {privateRegistryUrl || defaultPrivateRegistry || "Not configured"}
-              </div>
+              <div className="onboarding-inbox__label">Registry Mode</div>
               <div className="onboarding-inbox__hint">
-                We will create a registry container in your pod root under <code>registry/</code>.
+                Choose whether you want to participate in a research registry or keep a private
+                registry inside your pod.
               </div>
-              <label className="onboarding-checkbox">
-                <input
-                  type="checkbox"
-                  checked={privateRegistryAcknowledged}
-                  onChange={(e) => setPrivateRegistryAcknowledged(e.target.checked)}
-                />
-                <span>I understand that finishing will create and configure my private registry.</span>
-              </label>
+              <div className="onboarding-toggle" style={{ marginTop: 10 }}>
+                <button
+                  type="button"
+                  className={`onboarding-toggleBtn ${registryMode === "research" ? "active" : ""}`}
+                  onClick={() => setRegistryMode("research")}
+                >
+                  Research project
+                </button>
+                <button
+                  type="button"
+                  className={`onboarding-toggleBtn ${registryMode === "private" ? "active" : ""}`}
+                  onClick={() => setRegistryMode("private")}
+                >
+                  Private use
+                </button>
+              </div>
             </div>
+
+            {registryMode === "research" ? (
+              <div className="onboarding-inbox" style={{ marginTop: 18 }}>
+                <div className="onboarding-inbox__label">Research registries</div>
+                <div className="onboarding-checklist">
+                  {REGISTRY_PRESETS.map((preset) => (
+                    <label key={preset.id} className="onboarding-check">
+                      <input
+                        type="checkbox"
+                        checked={registrySelections.includes(preset.url)}
+                        onChange={() => toggleRegistrySelection(preset.url)}
+                      />
+                      <span>{preset.label}</span>
+                    </label>
+                  ))}
+                </div>
+                <div className="onboarding-inbox__hint">Select at least one registry.</div>
+                <label className="onboarding-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={researchRegistryAcknowledged}
+                    onChange={(e) => setResearchRegistryAcknowledged(e.target.checked)}
+                  />
+                  <span>
+                    I understand that finishing will register me in the selected registries.
+                  </span>
+                </label>
+              </div>
+            ) : (
+              <div className="onboarding-inbox" style={{ marginTop: 18 }}>
+                <div className="onboarding-inbox__label">Private Registry</div>
+                <div className="onboarding-inbox__value">
+                  {privateRegistryUrl || defaultPrivateRegistry || "Not configured"}
+                </div>
+                <div className="onboarding-inbox__hint">
+                  We will create a registry container in your pod root under <code>registry/</code>.
+                </div>
+                <label className="onboarding-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={privateRegistryAcknowledged}
+                    onChange={(e) => setPrivateRegistryAcknowledged(e.target.checked)}
+                  />
+                  <span>
+                    I understand that finishing will create and configure my private registry.
+                  </span>
+                </label>
+              </div>
+            )}
           </div>
         )}
 
@@ -642,7 +724,9 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
               (step === 3 &&
                 (!inboxAcknowledged ||
                   !catalogAcknowledged ||
-                  !privateRegistryAcknowledged))
+                  (registryMode === "private"
+                    ? !privateRegistryAcknowledged
+                    : !researchRegistryAcknowledged || !registrySelectionsComplete)))
             }
           >
             {saving ? "Saving..." : step === 3 ? "Finish" : "Next"}
