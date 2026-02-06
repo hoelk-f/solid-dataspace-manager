@@ -13,7 +13,14 @@ import Notifications from "./components/Notifications";
 import DecisionInbox from "./components/DecisionInbox";
 import TransactionHistory from "./components/TransactionHistory";
 import OnboardingWizard from "./components/OnboardingWizard";
-import { buildDefaultPrivateRegistry, loadRegistryConfig, resolveCatalogUrl } from "./solidCatalog";
+import {
+  buildDefaultPrivateRegistry,
+  DEFAULT_RESEARCH_REGISTRIES,
+  loadRegistryConfig,
+  resolveCatalogUrl,
+  saveRegistryConfig,
+  syncRegistryMembership,
+} from "./solidCatalog";
 
 const App = () => {
   const [webId, setWebId] = useState("");
@@ -96,13 +103,27 @@ const App = () => {
         let missingRegistry = false;
         try {
           const registryConfig = await loadRegistryConfig(webId, session.fetch);
-          const privateUrl =
-            registryConfig.privateRegistry || buildDefaultPrivateRegistry(webId);
-          if (!privateUrl) {
+          const forcedRegistryConfig = {
+            mode: "research",
+            registries: DEFAULT_RESEARCH_REGISTRIES,
+            privateRegistry:
+              registryConfig.privateRegistry || buildDefaultPrivateRegistry(webId),
+          };
+
+          await saveRegistryConfig(webId, session.fetch, forcedRegistryConfig);
+          await syncRegistryMembership(
+            webId,
+            session.fetch,
+            registryConfig,
+            forcedRegistryConfig
+          );
+
+          const [researchRegistry] = forcedRegistryConfig.registries || [];
+          if (!researchRegistry) {
             missingRegistry = true;
           } else {
             try {
-              await getSolidDataset(privateUrl, { fetch: session.fetch });
+              await getSolidDataset(researchRegistry, { fetch: session.fetch });
             } catch (err) {
               const status = err?.statusCode || err?.response?.status;
               if (status === 404) missingRegistry = true;
