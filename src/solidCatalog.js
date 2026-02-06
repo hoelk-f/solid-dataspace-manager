@@ -37,11 +37,15 @@ const SDM_REGISTRY_MODE = `${SDM_NS}registryMode`;
 const SDM_REGISTRY = `${SDM_NS}registry`;
 const SDM_PRIVATE_REGISTRY = `${SDM_NS}privateRegistry`;
 
+export const DEFAULT_RESEARCH_REGISTRY_URL =
+  "https://tmdt-solid-community-server.de/semanticdatacatalog/public/stadt-wuppertal";
+export const DEFAULT_RESEARCH_REGISTRIES = [DEFAULT_RESEARCH_REGISTRY_URL];
+
 export const REGISTRY_PRESETS = [
   {
     id: "stadt-wuppertal",
-    label: "Stadt Wuppertal",
-    url: "https://tmdt-solid-community-server.de/semanticdatacatalog/public/stadt-wuppertal",
+    label: "Gesundes Tal",
+    url: DEFAULT_RESEARCH_REGISTRY_URL,
   },
   {
     id: "dace",

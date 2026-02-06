@@ -27,6 +27,7 @@ import { FOAF, VCARD, LDP } from "@inrupt/vocab-common-rdf";
 import session from "../solidSession";
 import {
   buildDefaultPrivateRegistry,
+  DEFAULT_RESEARCH_REGISTRIES,
   ensureCatalogStructure,
   loadRegistryConfig,
   resolveCatalogUrl,
@@ -108,8 +109,8 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
   const emailsComplete = normalizeEmails(emails).length > 0;
   const defaultPrivateRegistry = buildDefaultPrivateRegistry(webId);
   const getRegistryConfig = () => ({
-    mode: "private",
-    registries: [],
+    mode: "research",
+    registries: DEFAULT_RESEARCH_REGISTRIES,
     privateRegistry: privateRegistryUrl || defaultPrivateRegistry,
   });
   const loadProfile = async () => {
