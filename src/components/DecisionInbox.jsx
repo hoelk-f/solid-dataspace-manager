@@ -58,6 +58,39 @@ const formatDateTime = (value) => {
   });
 };
 
+const getPodRoot = (webId) => {
+  if (!webId) return "";
+  try {
+    const url = new URL(webId);
+    const profileIndex = url.pathname.indexOf("/profile/");
+    const basePath =
+      profileIndex >= 0 ? url.pathname.slice(0, profileIndex + 1) : url.pathname;
+    return `${url.origin}${basePath}`;
+  } catch {
+    return webId;
+  }
+};
+
+const getOwnerRoot = (item) => {
+  const url = item.datasetAccessUrl || item.datasetSemanticModelUrl || item.catalogUrl || "";
+  if (!url) return "";
+  try {
+    const parsed = new URL(url);
+    const trimmed = parsed.pathname.split("/").filter(Boolean);
+    const rootPath = trimmed.length ? `/${trimmed[0]}/` : "/";
+    return `${parsed.origin}${rootPath}`;
+  } catch {
+    return "";
+  }
+};
+
+const getProviderRoot = (item, webId) => {
+  const selfRoot = getPodRoot(webId);
+  const ownerRoot = getOwnerRoot(item);
+  if (ownerRoot && ownerRoot !== selfRoot) return ownerRoot;
+  return ownerRoot || "unknown pod";
+};
+
 const DecisionInbox = ({ webId }) => {
   const [inboxUrl, setInboxUrl] = useState("");
   const [decisions, setDecisions] = useState([]);
@@ -291,6 +324,7 @@ const DecisionInbox = ({ webId }) => {
                   <strong>Decided:</strong> {formatDateTime(item.decidedAt || item.createdAt)}
                 </div>
                 <div><strong>Expires:</strong> {formatDateTime(item.expiresAt)}</div>
+                <div><strong>Provider:</strong> {getProviderRoot(item, webId)}</div>
               </div>
 
               {item.decisionComment && (

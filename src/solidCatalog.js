@@ -46,16 +46,19 @@ export const REGISTRY_PRESETS = [
     id: "stadt-wuppertal",
     label: "Gesundes Tal",
     url: DEFAULT_RESEARCH_REGISTRY_URL,
+    logo: "/GesundesTal_Logo.png",
   },
   {
     id: "dace",
     label: "DACE",
     url: "https://tmdt-solid-community-server.de/semanticdatacatalog/public/dace",
+    logo: "/DACE_Logo_grün.png",
   },
   {
     id: "timberconnect",
     label: "TimberConnect",
     url: "https://tmdt-solid-community-server.de/semanticdatacatalog/public/timberconnect",
+    logo: "/TimberConnect_Logo2.png",
   },
 ];
 

@@ -303,6 +303,15 @@ const TransactionHistory = ({ webId }) => {
     });
   }, [activeConnections, webId]);
 
+  const getPartnerRoot = (item) => {
+    const requesterRoot = getPodRoot(item.requesterWebId);
+    const ownerRoot = getOwnerRoot(item);
+    if (item.direction === "incoming") {
+      return ownerRoot || requesterRoot || "unknown pod";
+    }
+    return requesterRoot || ownerRoot || "unknown pod";
+  };
+
   useEffect(() => {
     if (!connectionPairs.length) {
       setPodAngles([]);
@@ -353,7 +362,7 @@ const TransactionHistory = ({ webId }) => {
             <div className="stat-value">
               {stats.incoming} / {stats.outgoing}
             </div>
-            <div className="stat-sub">Incoming (to you) / Outgoing (from you)</div>
+            <div className="stat-sub">Incoming / Outgoing</div>
           </div>
           <div className="stat-card">
             <div className="stat-label">
@@ -481,7 +490,7 @@ const TransactionHistory = ({ webId }) => {
             <div className="transactions-table">
               <div className="transactions-row transactions-row--head">
                 <span>Direction</span>
-                <span>Requester</span>
+                <span>Requester / Provider</span>
                 <span>Dataset</span>
                 <span>Last Update</span>
                 <span>Expires</span>
@@ -491,7 +500,7 @@ const TransactionHistory = ({ webId }) => {
                   <span className={`dir-pill dir-${item.direction}`}>
                     {item.direction}
                   </span>
-                  <span className="mono">{item.requesterWebId || "N/A"}</span>
+                  <span className="mono">{getPartnerRoot(item)}</span>
                   <span>{item.datasetTitle || item.datasetIdentifier || "Untitled"}</span>
                   <span>{formatDateTime(item.decidedAt || item.createdAt)}</span>
                   <span>{formatDateTime(item.expiresAt)}</span>

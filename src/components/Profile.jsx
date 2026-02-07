@@ -74,6 +74,21 @@ function getPodRoot(webId) {
   return `${url.origin}${basePath}`;
 }
 
+function toCatalogContainerUrl(value) {
+  if (!value) return "";
+  try {
+    const url = new URL(value);
+    const idx = url.pathname.indexOf("/catalog/");
+    if (idx !== -1) {
+      const basePath = url.pathname.slice(0, idx + "/catalog/".length);
+      return `${url.origin}${basePath}`;
+    }
+    return `${url.origin}${url.pathname.replace(/\/[^/]*$/, "/")}`;
+  } catch {
+    return value;
+  }
+}
+
 function SectionCard({ title, icon, editing, onEdit, children }) {
   return (
     <div className={`pf-card ${editing ? "pf-card--editing" : ""}`}>
@@ -178,6 +193,7 @@ export default function Profile({ webId }) {
   const [privateRegistryMembers, setPrivateRegistryMembers] = useState([]);
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState("");
+  const catalogContainerUrl = toCatalogContainerUrl(catalogUrl);
 
   const showAlert = (msg) => {
     setAlertMessage(msg);
@@ -753,9 +769,9 @@ export default function Profile({ webId }) {
           <div className="pf-ro">
             <div className="pf-label">Catalog URL</div>
             <div className="pf-value">
-              {catalogUrl ? (
-                <a href={catalogUrl} target="_blank" rel="noopener noreferrer">
-                  {catalogUrl}
+              {catalogContainerUrl ? (
+                <a href={catalogContainerUrl} target="_blank" rel="noopener noreferrer">
+                  {catalogContainerUrl}
                 </a>
               ) : (
                 <span className="pf-muted">Not configured</span>
@@ -763,7 +779,7 @@ export default function Profile({ webId }) {
             </div>
           </div>
           <div className="pf-muted" style={{ marginTop: 8 }}>
-            The catalog metadata is stored in your pod under <code>catalog/</code>.
+            The catalog metadata is stored in your catalog.
           </div>
           <div className="pf-actions" style={{ marginTop: 12 }}>
             <button
@@ -816,19 +832,29 @@ export default function Profile({ webId }) {
           </div>
 
           {registryMode === "research" ? (
-            <div className="pf-checklist">
-              {REGISTRY_PRESETS.map((preset) => (
-                <label key={preset.id} className="pf-check">
-                  <input
-                    type="checkbox"
-                    checked={registrySelections.includes(preset.url)}
-                    onChange={() => toggleRegistrySelection(preset.url)}
-                  />
-                  <span>{preset.label}</span>
-                </label>
-              ))}
+            <>
+              <div className="pf-registryGrid">
+                {REGISTRY_PRESETS.map((preset) => {
+                  const selected = registrySelections.includes(preset.url);
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      className={`pf-registryCard ${selected ? "selected" : ""}`}
+                      onClick={() => toggleRegistrySelection(preset.url)}
+                      aria-pressed={selected}
+                      title={preset.label}
+                    >
+                      <div className="pf-registryImage">
+                        <img src={preset.logo} alt={preset.label} loading="lazy" />
+                      </div>
+                      <span className="pf-registryCheck" aria-hidden="true">✓</span>
+                    </button>
+                  );
+                })}
+              </div>
               <div className="pf-muted">Select one or more registries.</div>
-            </div>
+            </>
           ) : (
             <div className="pf-privateRegistry">
               <div className="pf-label">Registry URL</div>
