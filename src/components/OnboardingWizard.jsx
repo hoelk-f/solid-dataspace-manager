@@ -98,7 +98,7 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
   const [registrySelections, setRegistrySelections] = useState([]);
   const [researchRegistryAcknowledged, setResearchRegistryAcknowledged] = useState(false);
   const [privateRegistryUrl, setPrivateRegistryUrl] = useState("");
-  const [privateRegistryAcknowledged, setPrivateRegistryAcknowledged] = useState(false);
+  const [privateRegistryAcknowledged, setPrivateRegistryAcknowledged] = useState(true);
 
   const steps = useMemo(
     () => [
@@ -195,9 +195,7 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
       setPrivateRegistryUrl(
         registryConfig.privateRegistry || buildDefaultPrivateRegistry(webId)
       );
-      setPrivateRegistryAcknowledged(
-        Boolean(registryConfig.privateRegistry || buildDefaultPrivateRegistry(webId))
-      );
+      setPrivateRegistryAcknowledged(true);
       setResearchRegistryAcknowledged(Boolean((registryConfig.registries || []).length));
 
       const missingBasics = !(nm && org && role);
@@ -205,11 +203,8 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
       const missingInbox = !inbox;
       const missingCatalog = !hasCatalog;
       const registryMissing =
-        registryConfig.mode === "private"
-          ? !(
-            (registryConfig.privateRegistry || buildDefaultPrivateRegistry(webId)).trim()
-          )
-          : !(registryConfig.registries || []).length;
+        !((registryConfig.privateRegistry || buildDefaultPrivateRegistry(webId)).trim()) ||
+        (registryConfig.mode !== "private" && !(registryConfig.registries || []).length);
 
       if (!missingBasics && !missingEmail && !missingInbox && !missingCatalog && !registryMissing) {
         onComplete();
@@ -653,20 +648,28 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
               </div>
             </div>
 
-            {registryMode === "research" ? (
+            {registryMode === "research" && (
               <div className="onboarding-inbox" style={{ marginTop: 18 }}>
                 <div className="onboarding-inbox__label">Research registries</div>
-                <div className="onboarding-checklist">
-                  {REGISTRY_PRESETS.map((preset) => (
-                    <label key={preset.id} className="onboarding-check">
-                      <input
-                        type="checkbox"
-                        checked={registrySelections.includes(preset.url)}
-                        onChange={() => toggleRegistrySelection(preset.url)}
-                      />
-                      <span>{preset.label}</span>
-                    </label>
-                  ))}
+                <div className="onboarding-registryGrid">
+                  {REGISTRY_PRESETS.map((preset) => {
+                    const selected = registrySelections.includes(preset.url);
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        className={`onboarding-registryCard ${selected ? "selected" : ""}`}
+                        onClick={() => toggleRegistrySelection(preset.url)}
+                        aria-pressed={selected}
+                        title={preset.label}
+                      >
+                        <div className="onboarding-registryImage">
+                          <img src={preset.logo} alt={preset.label} loading="lazy" />
+                        </div>
+                        <span className="onboarding-registryCheck" aria-hidden="true">✓</span>
+                      </button>
+                    );
+                  })}
                 </div>
                 <div className="onboarding-inbox__hint">Select at least one registry.</div>
                 <label className="onboarding-checkbox">
@@ -680,27 +683,17 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
                   </span>
                 </label>
               </div>
-            ) : (
-              <div className="onboarding-inbox" style={{ marginTop: 18 }}>
-                <div className="onboarding-inbox__label">Private Registry</div>
-                <div className="onboarding-inbox__value">
-                  {privateRegistryUrl || defaultPrivateRegistry || "Not configured"}
-                </div>
-                <div className="onboarding-inbox__hint">
-                  We will create a registry container in your pod root under <code>registry/</code>.
-                </div>
-                <label className="onboarding-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={privateRegistryAcknowledged}
-                    onChange={(e) => setPrivateRegistryAcknowledged(e.target.checked)}
-                  />
-                  <span>
-                    I understand that finishing will create and configure my private registry.
-                  </span>
-                </label>
-              </div>
             )}
+
+            <div className="onboarding-inbox" style={{ marginTop: 18 }}>
+              <div className="onboarding-inbox__label">Private Registry</div>
+              <div className="onboarding-inbox__value">
+                {privateRegistryUrl || defaultPrivateRegistry || "Not configured"}
+              </div>
+              <div className="onboarding-inbox__hint">
+                We will always create a registry container in your pod root under <code>registry/</code>.
+              </div>
+            </div>
           </div>
         )}
 
@@ -724,9 +717,8 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
               (step === 3 &&
                 (!inboxAcknowledged ||
                   !catalogAcknowledged ||
-                  (registryMode === "private"
-                    ? !privateRegistryAcknowledged
-                    : !researchRegistryAcknowledged || !registrySelectionsComplete)))
+                  (registryMode === "research" &&
+                    (!researchRegistryAcknowledged || !registrySelectionsComplete))))
             }
           >
             {saving ? "Saving..." : step === 3 ? "Finish" : "Next"}

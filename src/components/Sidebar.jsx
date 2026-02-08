@@ -247,7 +247,7 @@ function Sidebar({ webId }) {
           <FontAwesomeIcon icon={faRightFromBracket} />
           <span>Logout</span>
         </button>
-        <div className="sb-foot">© 2025 TMDT</div>
+        <div className="sb-foot">© 2026 TMDT</div>
       </div>
     </aside>
   );
