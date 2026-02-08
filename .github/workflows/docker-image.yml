@@ -24,4 +24,4 @@ jobs:
           push: true
           tags: son1i/solid-dataspace-manager:latest
           build-args: |
-            NPM_TOKEN=${{ secrets.GH_PACKAGES_TOKEN }}
+            NPM_TOKEN=${{ secrets.NPM_TOKEN }}
