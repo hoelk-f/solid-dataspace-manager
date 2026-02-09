@@ -2,15 +2,19 @@ import React from "react";
 import "./Info.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faTableColumns,
+  faCircleInfo,
+  faFolderOpen,
+  faUserGear,
+  faInbox,
+  faBell,
   faBookOpen,
   faHexagonNodes,
   faDatabase,
   faTemperatureHigh,
-  faCircleInfo,
-  faBell,
-  faInbox,
-  faUserGear
+  faNetworkWired,
+  faShieldHalved,
+  faLightbulb,
+  faCompass
 } from "@fortawesome/free-solid-svg-icons";
 
 function Info() {
@@ -23,111 +27,178 @@ function Info() {
         </div>
         <div />
       </div>
-      <p className="info-intro">
-        Solid Dataspace is a prototype dataspace built on Solid, the decentralised data platform
-        initiated by web inventor Tim Berners-Lee. Solid lets individuals store information in personal
-        online data stores called Pods that they control. Using open standards for authentication and
-        data interchange, Pods allow people to decide where their data lives, who can access it, and to
-        move between applications without losing control.
-      </p>
 
-      <div className="info-section">
-        <h2>
-          <FontAwesomeIcon icon={faTableColumns} /> Data Manager
-        </h2>
-        <p>
-          The Data Manager lets you browse and control the files in your Solid Pod. You can upload,
-          download, share, and revoke access to resources directly from your pod storage.
-        </p>
-      </div>
+      <section className="info-hero">
+        <div>
+          <div className="info-kicker">
+            <FontAwesomeIcon icon={faCompass} />
+            <span>Plain language</span>
+          </div>
+          <h1>What is the Solid Dataspace?</h1>
+          <p>
+            Solid Dataspace brings several tools together so data can be stored in a personal Pod,
+            described with metadata, discovered in a catalog, and shared in a controlled way.
+            You stay in charge of where your data lives and who can access it.
+          </p>
+        </div>
+        <div className="info-hero-card">
+          <div className="info-hero-title">
+            <FontAwesomeIcon icon={faShieldHalved} />
+            <span>Your data, your rules</span>
+          </div>
+        </div>
+      </section>
 
-      <div className="info-section">
-        <h2>
-          <FontAwesomeIcon icon={faUserGear} /> Profile Manager
-        </h2>
-        <p>
-          The Profile Manager helps you maintain your WebID profile with your name, organization,
-          role, email, and profile photo. It also provides tools to configure your Solid inbox and
-          to initialize the Solid catalog structure that stores your metadata in your pod.
-        </p>
-      </div>
+      <section className="info-grid">
+        <div className="info-card">
+          <div className="info-card-title">
+            <FontAwesomeIcon icon={faFolderOpen} />
+            <span>Solid Data Manager</span>
+          </div>
+          <p>
+            Your file manager for the Pod. Upload files, organize folders, and control who can
+            access them.
+          </p>
+          <span className="info-chip">Files and folders</span>
+        </div>
 
-      <div className="info-section">
-        <h2>
-          <FontAwesomeIcon icon={faBell} /> Access Requests
-        </h2>
-        <p>
-          Incoming access requests from the Semantic Data Catalog arrive as notifications. You can
-          review requester details, approve or deny access, set optional expirations, and leave a
-          comment for the requester.
-        </p>
-      </div>
+        <div className="info-card">
+          <div className="info-card-title">
+            <FontAwesomeIcon icon={faUserGear} />
+            <span>Profile Manager</span>
+          </div>
+          <p>
+            Maintain your WebID profile and set up the inbox, catalog, and registry. This is the
+            foundation for everything else.
+          </p>
+          <span className="info-chip">Profile setup</span>
+        </div>
 
-      <div className="info-section">
-        <h2>
-          <FontAwesomeIcon icon={faInbox} /> Access Decisions
-        </h2>
-        <p>
-          When someone grants or revokes access to your requests, the decision is delivered to your
-          inbox and shown here. This keeps the status of your requests in one place.
-        </p>
-      </div>
+        <div className="info-card">
+          <div className="info-card-title">
+            <FontAwesomeIcon icon={faBell} />
+            <span>Access Requests</span>
+          </div>
+          <p>
+            Requests arrive here when someone wants to use your data. You decide to approve, deny,
+            or set an expiry date.
+          </p>
+          <span className="info-chip">Requests</span>
+        </div>
 
-      <div className="info-section">
-        <h2>
-          <FontAwesomeIcon icon={faBookOpen} /> Semantic Data Catalog
-        </h2>
-        <p>
-          The catalog is the entry point to the dataspace. It allows providers to publish datasets and
-          consumers to discover and reuse data sources hosted in Pods. Catalog metadata lives inside
-          each owner&apos;s pod under a <code>catalog/</code> container and is discovered through a public
-          type index plus a registry of dataspace members.
-        </p>
-      </div>
+        <div className="info-card">
+          <div className="info-card-title">
+            <FontAwesomeIcon icon={faInbox} />
+            <span>Access Decisions</span>
+          </div>
+          <p>
+            Decisions on your own requests show up here, so you can quickly see if access was granted.
+          </p>
+          <span className="info-chip">Responses</span>
+        </div>
 
-      <div className="info-section">
-        <h2>
-          <FontAwesomeIcon icon={faHexagonNodes} /> PLASMA
-        </h2>
-        <p>
-          PLASMA is a semantic modelling tool for enriching datasets with machine-readable context. The
-          resulting descriptions are uploaded to the Semantic Data Catalog so others can understand and
-          integrate the data.
-        </p>
-      </div>
+        <div className="info-card">
+          <div className="info-card-title">
+            <FontAwesomeIcon icon={faBookOpen} />
+            <span>Semantic Data Catalog</span>
+          </div>
+          <p>
+            The discovery and publishing portal. Providers publish datasets, and others can find them
+            and request access.
+          </p>
+          <span className="info-chip">Find and publish</span>
+        </div>
 
-      <div className="info-section">
-        <h2>
-          <FontAwesomeIcon icon={faDatabase} /> Node-RED
-        </h2>
-        <p>
-          Node-RED provides real-time data integration. Flows collect data streams and store them in
-          Solid Pods, keeping live information available within the dataspace.
-        </p>
-      </div>
+        <div className="info-card">
+          <div className="info-card-title">
+            <FontAwesomeIcon icon={faHexagonNodes} />
+            <span>PLASMA</span>
+          </div>
+          <p>
+            A semantic modeling tool that adds meaning to datasets so they are easier to understand
+            and reuse.
+          </p>
+          <span className="info-chip">Semantics</span>
+        </div>
 
-      <div className="info-section">
-        <h2>
-          <FontAwesomeIcon icon={faTemperatureHigh} /> Urban Heat Monitoring
-        </h2>
-        <p>
-          The Smart City Urban Heat Monitoring application consumes catalogued datasets to visualise
-          temperature conditions, demonstrating how published data can power useful services.
-        </p>
-      </div>
+        <div className="info-card">
+          <div className="info-card-title">
+            <FontAwesomeIcon icon={faDatabase} />
+            <span>Node-RED</span>
+          </div>
+          <p>
+            For live data and automation. Data streams can be collected, processed, and stored directly
+            in Pods.
+          </p>
+          <span className="info-chip">Data streams</span>
+        </div>
 
-      <div className="info-section">
-        <h2>
-          <FontAwesomeIcon icon={faCircleInfo} /> How it all connects
-        </h2>
-        <p>
-          Data flows into Solid Pods via tools like Node-RED or manual uploads through the Data Manager.
-          PLASMA adds semantic annotations before datasets are published in the Semantic Data Catalog.
-          The catalog UI aggregates metadata from all registered pod catalogs. Access requests are
-          handled in the Manager, while decisions are delivered back to requesters through inbox
-          notifications. Together these components form the Solid Dataspace.
-        </p>
-      </div>
+        <div className="info-card">
+          <div className="info-card-title">
+            <FontAwesomeIcon icon={faTemperatureHigh} />
+            <span>Urban Heat Monitoring</span>
+          </div>
+          <p>
+            An example application that uses catalog data to visualize urban heat conditions.
+          </p>
+          <span className="info-chip">Example app</span>
+        </div>
+      </section>
+
+      <section className="info-flow">
+        <div className="info-flow-head">
+          <FontAwesomeIcon icon={faNetworkWired} />
+          <div>
+            <h2>How a data flow works</h2>
+            <p>From dataset to usage in five simple steps.</p>
+          </div>
+        </div>
+        <ol className="info-steps">
+          <li>
+            <strong>Store data:</strong> Files live in your Pod (via the Data Manager or Node-RED).
+          </li>
+          <li>
+            <strong>Describe:</strong> PLASMA adds meaning with metadata and semantics.
+          </li>
+          <li>
+            <strong>Publish:</strong> The Semantic Data Catalog makes datasets discoverable.
+          </li>
+          <li>
+            <strong>Request:</strong> Others request access through the catalog.
+          </li>
+          <li>
+            <strong>Decide:</strong> You grant or deny access. Everything stays traceable.
+          </li>
+        </ol>
+      </section>
+
+      <section className="info-faq">
+        <div className="info-faq-head">
+          <FontAwesomeIcon icon={faLightbulb} />
+          <div>
+            <h2>Key terms</h2>
+            <p>Quick definitions to get started.</p>
+          </div>
+        </div>
+        <div className="info-faq-grid">
+          <div className="info-faq-card">
+            <h3>Pod</h3>
+            <p>Your personal data store online, similar to a cloud drive, but under your control.</p>
+          </div>
+          <div className="info-faq-card">
+            <h3>WebID</h3>
+            <p>Your digital identity that connects you to your Pod and permissions.</p>
+          </div>
+          <div className="info-faq-card">
+            <h3>Inbox</h3>
+            <p>The entry point for notifications such as access requests and decisions.</p>
+          </div>
+          <div className="info-faq-card">
+            <h3>Catalog</h3>
+            <p>A directory that describes what datasets exist and how to find them.</p>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
