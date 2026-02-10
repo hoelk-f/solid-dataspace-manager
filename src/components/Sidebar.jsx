@@ -29,6 +29,7 @@ import {
 } from "@inrupt/solid-client";
 import { LDP, RDF } from "@inrupt/vocab-common-rdf";
 import "./Sidebar.css";
+import { appVersion } from "../version";
 
 const SDM_NS = "https://w3id.org/solid-dataspace-manager#";
 const SDM = {
@@ -247,7 +248,7 @@ function Sidebar({ webId }) {
           <FontAwesomeIcon icon={faRightFromBracket} />
           <span>Logout</span>
         </button>
-        <div className="sb-foot">© 2026 TMDT</div>
+        <div className="sb-foot">© 2026 TMDT · v{appVersion}</div>
       </div>
     </aside>
   );
