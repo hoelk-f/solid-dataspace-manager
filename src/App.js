@@ -18,6 +18,7 @@ import {
   loadRegistryConfig,
   resolveCatalogUrl,
 } from "./solidCatalog";
+import { dataManagerVersion } from "./versions";
 
 const App = () => {
   const [webId, setWebId] = useState("");
@@ -177,6 +178,15 @@ const App = () => {
     );
   }
 
+  const DataManagerPage = () => (
+    <div className="data-manager-embed">
+      <DataManagerEmbed webId={webId} />
+      <div className="data-manager-footer">
+        Solid Data Manager {dataManagerVersion}
+      </div>
+    </div>
+  );
+
   return (
     <BrowserRouter>
       <div className="layout">
@@ -184,7 +194,7 @@ const App = () => {
         <div className="main">
           <div className="container">
             <Routes>
-              <Route path="/" element={<DataManagerEmbed webId={webId} />} />
+              <Route path="/" element={<DataManagerPage />} />
               <Route path="/transactions" element={<TransactionHistory webId={webId} />} />
               <Route path="/notifications" element={<Notifications webId={webId} />} />
               <Route path="/decisions" element={<DecisionInbox webId={webId} />} />

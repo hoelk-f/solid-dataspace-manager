@@ -1,0 +1,1 @@
+export const appVersion = "0.3.3";\nexport const dataManagerVersion = "0.4.2";\n
