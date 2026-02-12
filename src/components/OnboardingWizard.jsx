@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   getSolidDataset,
   getThing,
@@ -24,6 +25,7 @@ import {
   overwriteFile,
 } from "@inrupt/solid-client";
 import { FOAF, VCARD, LDP } from "@inrupt/vocab-common-rdf";
+import { faFlask, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import session from "../solidSession";
 import {
   buildDefaultPrivateRegistry,
@@ -37,6 +39,10 @@ import {
 import "./OnboardingWizard.css";
 
 const VCARD_TYPE = "http://www.w3.org/2006/vcard/ns#type";
+
+const REGISTRY_ICON_MAP = {
+  flask: faFlask,
+};
 
 const guessContentType = (filename, fallback = "application/octet-stream") => {
   const ext = filename.split(".").pop()?.toLowerCase();
@@ -664,7 +670,15 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
                         title={preset.label}
                       >
                         <div className="onboarding-registryImage">
-                          <img src={preset.logo} alt={preset.label} loading="lazy" />
+                          {preset.logo ? (
+                            <img src={preset.logo} alt={preset.label} loading="lazy" />
+                          ) : (
+                            <FontAwesomeIcon
+                              icon={REGISTRY_ICON_MAP[preset.icon] || faSitemap}
+                              className="onboarding-registryIcon"
+                              aria-hidden="true"
+                            />
+                          )}
                         </div>
                         <span className="onboarding-registryCheck" aria-hidden="true">✓</span>
                       </button>

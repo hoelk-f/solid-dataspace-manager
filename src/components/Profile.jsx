@@ -34,7 +34,7 @@ import ConfirmModal from "./ConfirmModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUserCircle, faPen, faPlus, faTrash,
-  faEnvelope, faInbox, faBookOpen, faSitemap
+  faEnvelope, faInbox, faBookOpen, faSitemap, faFlask
 } from "@fortawesome/free-solid-svg-icons";
 import {
   buildDefaultPrivateRegistry,
@@ -51,6 +51,9 @@ import {
 } from "../solidCatalog";
 
 const VCARD_TYPE = "http://www.w3.org/2006/vcard/ns#type";
+const REGISTRY_ICON_MAP = {
+  flask: faFlask,
+};
 
 function guessContentType(filename, fallback = "application/octet-stream") {
   const ext = filename.split(".").pop()?.toLowerCase();
@@ -846,7 +849,15 @@ export default function Profile({ webId }) {
                       title={preset.label}
                     >
                       <div className="pf-registryImage">
-                        <img src={preset.logo} alt={preset.label} loading="lazy" />
+                        {preset.logo ? (
+                          <img src={preset.logo} alt={preset.label} loading="lazy" />
+                        ) : (
+                          <FontAwesomeIcon
+                            icon={REGISTRY_ICON_MAP[preset.icon] || faSitemap}
+                            className="pf-registryIcon"
+                            aria-hidden="true"
+                          />
+                        )}
                       </div>
                       <span className="pf-registryCheck" aria-hidden="true">✓</span>
                     </button>

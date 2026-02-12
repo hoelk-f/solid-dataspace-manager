@@ -330,6 +330,10 @@
   max-height: 90%;
   object-fit: contain;
 }
+.onboarding-registryIcon {
+  font-size: 42px;
+  color: #1d4ed8;
+}
 
 .onboarding-registryCheck {
   position: absolute;
