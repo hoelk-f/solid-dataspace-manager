@@ -8,9 +8,6 @@ services:
     stdin_open: true
     environment:
       - REACT_APP_OIDC_ISSUER=https://solidcommunity.net
-      - REACT_APP_REDIRECT_URL=${REACT_APP_REDIRECT_URL:-http://localhost}
-      - REACT_APP_FOOTER_LOGOS=/Logo_TMDT.png
-      - REACT_APP_VERSION=0.5.0
       - PORT=3001
     tty: true
     ports:
