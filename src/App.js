@@ -5,6 +5,11 @@ import "@hoelk-f/solid-data-manager/embed.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import { DataManagerEmbed, setSession as setDataManagerSession } from "@hoelk-f/solid-data-manager/embed";
+import "@hoelk-f/semantic-data-catalog/embed.css";
+import {
+  SemanticDataCatalogEmbed,
+  setSession as setCatalogSession,
+} from "@hoelk-f/semantic-data-catalog/embed";
 import ExternalHost from "./components/ExternalHost";
 import Info from "./components/Info";
 import LoginScreen from "./components/LoginScreen";
@@ -39,6 +44,7 @@ const App = () => {
 
   useEffect(() => {
     setDataManagerSession(session);
+    setCatalogSession(session);
   }, []);
 
   useEffect(() => {
@@ -187,6 +193,12 @@ const App = () => {
     </div>
   );
 
+  const CatalogPage = () => (
+    <div className="data-catalog-embed">
+      <SemanticDataCatalogEmbed webId={webId} />
+    </div>
+  );
+
   return (
     <BrowserRouter>
       <div className="layout">
@@ -195,6 +207,7 @@ const App = () => {
           <div className="container">
             <Routes>
               <Route path="/" element={<DataManagerPage />} />
+              <Route path="/catalog" element={<CatalogPage />} />
               <Route path="/transactions" element={<TransactionHistory webId={webId} />} />
               <Route path="/notifications" element={<Notifications webId={webId} />} />
               <Route path="/decisions" element={<DecisionInbox webId={webId} />} />

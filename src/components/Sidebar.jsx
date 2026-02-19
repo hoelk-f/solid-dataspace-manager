@@ -207,15 +207,13 @@ function Sidebar({ webId }) {
         </Link>
 
         <div className="sb-section">Consume and Provide</div>
-        <a
-          href="/semantic-data-catalog/"
-          className="sb-link"
-          target="_blank"
-          rel="noopener noreferrer"
+        <Link
+          to="/catalog"
+          className={"sb-link" + (isActive("/catalog") ? " active" : "")}
         >
           <FontAwesomeIcon icon={faBookOpen} />
           <span>Semantic Data Catalog</span>
-        </a>
+        </Link>
         <Link to="/web/plasma" className="sb-link">
           <FontAwesomeIcon icon={faHexagonNodes} />
           <span>PLASMA</span>
