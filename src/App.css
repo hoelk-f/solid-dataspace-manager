@@ -28,7 +28,39 @@ body {
 .data-manager-embed {
   position: relative;
   min-height: calc(100vh - 32px);
-  padding-bottom: 52px;
+  padding-bottom: 0;
+}
+
+.data-manager-embed .data-manager-layout {
+  height: auto;
+  min-height: 0;
+}
+
+.data-manager-embed .pill-btn {
+  background: #142642;
+  color: #f8fafc;
+  border: 1px solid #1d355a;
+  border-radius: 14px;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.16);
+  transition: transform 0.05s ease, background 0.2s ease;
+}
+
+.data-manager-embed .pill-btn:hover {
+  transform: translateY(-1px);
+  background: #1d355a;
+  color: #f8fafc;
+}
+
+.data-catalog-embed {
+  position: relative;
+  min-height: calc(100vh - 32px);
+  padding-bottom: 64px;
+}
+
+.catalog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .data-manager-footer {
@@ -50,6 +82,37 @@ body {
   z-index: 900;
 }
 
+.data-manager-footer {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.catalog-footer {
+  position: fixed;
+  left: 256px;
+  right: 0;
+  bottom: 0;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 24px;
+  background: rgba(248, 250, 252, 0.92);
+  border-top: 1px solid #e2e8f0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  backdrop-filter: blur(8px);
+  z-index: 900;
+  text-align: right;
+}
+
+@media (max-width: 900px) {
+  .catalog-footer {
+    left: 0;
+  }
+}
+
 @media (max-width: 900px) {
   .data-manager-footer {
     left: 0;
@@ -62,6 +125,11 @@ body {
   border-radius: 0;
   box-shadow: none;
   padding: 16px;
+}
+
+.layout .container {
+  max-width: none !important;
+  margin: 0 !important;
 }
 
 .toolbar {

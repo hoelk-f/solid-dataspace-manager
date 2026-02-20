@@ -1,6 +1,6 @@
 {
   "name": "pod_browser",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "private": true,
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^7.0.0",
@@ -10,6 +10,10 @@
     "@inrupt/solid-client": "^2.1.2",
     "@inrupt/solid-client-authn-browser": "^3.1.0",
     "@inrupt/vocab-common-rdf": "^1.0.5",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/material": "^7.3.7",
+    "@mui/x-data-grid": "^8.24.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
@@ -21,6 +25,9 @@
     "react-scripts": "5.0.1",
     "@hoelk-f/solid-data-manager": "^0.1.0",
     "@hoelk-f/semantic-data-catalog": "^0.8.4",
+    "axios": "^1.7.7",
+    "n3": "^1.23.1",
+    "vis-network": "^9.1.9",
     "uuid": "^11.1.0",
     "web-vitals": "^2.1.4"
   },

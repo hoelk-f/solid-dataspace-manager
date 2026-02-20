@@ -1,15 +1,18 @@
 import React, { useEffect, useState } from "react";
 import session from "./solidSession";
-import "./App.css";
 import "@hoelk-f/solid-data-manager/embed.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import { DataManagerEmbed, setSession as setDataManagerSession } from "@hoelk-f/solid-data-manager/embed";
 import "@hoelk-f/semantic-data-catalog/embed.css";
 import {
-  SemanticDataCatalogEmbed,
+  CatalogEmbed as SemanticDataCatalogEmbed,
   setSession as setCatalogSession,
+  catalogVersion,
 } from "@hoelk-f/semantic-data-catalog/embed";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faBookOpen } from "@fortawesome/free-solid-svg-icons";
+import "./App.css";
 import ExternalHost from "./components/ExternalHost";
 import Info from "./components/Info";
 import LoginScreen from "./components/LoginScreen";
@@ -195,7 +198,16 @@ const App = () => {
 
   const CatalogPage = () => (
     <div className="data-catalog-embed">
+      <div className="catalog-header toolbar--title">
+        <div className="crumb">
+          <FontAwesomeIcon icon={faBookOpen} className="crumb-icon" />
+          <span>Semantic Data Catalog</span>
+        </div>
+      </div>
       <SemanticDataCatalogEmbed webId={webId} />
+      <div className="catalog-footer">
+        Semantic Data Catalog {catalogVersion}
+      </div>
     </div>
   );
 
