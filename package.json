@@ -1,6 +1,6 @@
 {
   "name": "pod_browser",
-  "version": "0.3.8",
+  "version": "0.3.9",
   "private": true,
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^7.0.0",
