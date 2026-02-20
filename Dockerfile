@@ -8,7 +8,7 @@ COPY package.json ./
 RUN echo "@hoelk-f:registry=https://npm.pkg.github.com/" > .npmrc \
     && echo "//npm.pkg.github.com/:_authToken=${NPM_TOKEN}" >> .npmrc \
     && npm install \
-    && npm update @hoelk-f/semantic-data-catalog@latest \
+    && npm install @hoelk-f/semantic-data-catalog@latest --no-save \
     && rm -f .npmrc
 
 COPY . .
