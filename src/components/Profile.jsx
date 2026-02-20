@@ -873,10 +873,11 @@ export default function Profile({ webId }) {
                 className="pf-input"
                 value={privateRegistryUrl}
                 placeholder={buildDefaultPrivateRegistry(webId)}
-                onChange={(e) => setPrivateRegistryUrl(e.target.value)}
+                disabled
+                readOnly
               />
               <div className="pf-muted">
-                Default: a registry container in your pod root under <code>registry/</code>.
+                Default registry container in your pod.
               </div>
               <div className="pf-subtitle" style={{ marginTop: 8 }}>
                 Members (WebIDs)
