@@ -106,6 +106,7 @@
 
 .sb-link:hover {
   background: var(--primary-ghost);
+  text-decoration: none;
 }
 
 .sb-link.active {
