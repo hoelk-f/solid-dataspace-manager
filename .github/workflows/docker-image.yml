@@ -3,6 +3,8 @@ name: Docker Hub
 on:
   push:
     branches: ["main"]
+  repository_dispatch:
+    types: ["semantic-data-catalog-released"]
 
 jobs:
   build-and-push:
