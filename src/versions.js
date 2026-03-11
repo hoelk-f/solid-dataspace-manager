@@ -1,2 +1,2 @@
-export const appVersion = "0.3.14";
-export const dataManagerVersion = "0.4.3";
+export const appVersion = "0.3.15";
+export const dataManagerVersion = "0.4.4";

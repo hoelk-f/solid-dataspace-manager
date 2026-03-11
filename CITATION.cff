@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use this repository, please cite it using the metadata below."
+title: "solid-dataspace-manager"
+authors:
+  - name: "Institute for Technologies and Management of Digital Transformation (TMDT)"
+url: "https://tmdt.uni-wuppertal.de/"
+repository-code: "https://github.com/hoelk-f/solid-dataspace-manager"
+license: "Apache-2.0"
+version: "0.3.14"
