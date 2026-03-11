@@ -35,6 +35,7 @@ import {
   REGISTRY_PRESETS,
   resolveCatalogUrl,
   saveRegistryConfig,
+  SDP_CATALOG,
 } from "../solidCatalog";
 import "./OnboardingWizard.css";
 
@@ -104,7 +105,6 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
   const [registrySelections, setRegistrySelections] = useState([]);
   const [researchRegistryAcknowledged, setResearchRegistryAcknowledged] = useState(false);
   const [privateRegistryUrl, setPrivateRegistryUrl] = useState("");
-  const [privateRegistryAcknowledged, setPrivateRegistryAcknowledged] = useState(true);
 
   const steps = useMemo(
     () => [
@@ -176,16 +176,22 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
       const photo = getUrl(me, VCARD.hasPhoto) || getUrl(me, FOAF.img) || "";
       setPhotoIri(photo);
 
-      let catalogResolved = "";
+      const profileCatalog = getUrl(me, SDP_CATALOG) || "";
+      let catalogResolved = profileCatalog;
       let hasCatalog = false;
-      try {
-        catalogResolved = await resolveCatalogUrl(webId, session.fetch);
-        if (catalogResolved) {
-          await getSolidDataset(catalogResolved.split("#")[0], { fetch: session.fetch });
+      if (profileCatalog) {
+        try {
+          await getSolidDataset(profileCatalog.split("#")[0], { fetch: session.fetch });
           hasCatalog = true;
+        } catch {
+          hasCatalog = false;
         }
-      } catch {
-        hasCatalog = false;
+      } else {
+        try {
+          catalogResolved = await resolveCatalogUrl(webId, session.fetch);
+        } catch {
+          catalogResolved = "";
+        }
       }
       setCatalogUrl(catalogResolved);
       setCatalogAcknowledged(hasCatalog);
@@ -201,7 +207,6 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
       setPrivateRegistryUrl(
         registryConfig.privateRegistry || buildDefaultPrivateRegistry(webId)
       );
-      setPrivateRegistryAcknowledged(true);
       setResearchRegistryAcknowledged(Boolean((registryConfig.registries || []).length));
 
       const missingBasics = !(nm && org && role);
