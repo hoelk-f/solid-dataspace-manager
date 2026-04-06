@@ -8,6 +8,7 @@ import {
   faHexagonNodes,
   faDiagramProject,
   faTemperatureHigh,
+  faHeartPulse,
 } from "@fortawesome/free-solid-svg-icons";
 import "./ExternalHost.css";
 
@@ -16,17 +17,20 @@ export default function ExternalHost() {
   const navigate = useNavigate();
   const activeLink = externalLinks.find((link) => link.slug === slug);
   const [loaded, setLoaded] = useState(false);
+
   const iconMap = {
     plasma: faHexagonNodes,
     "node-red": faDiagramProject,
-    "urban-heat-monitoring": faTemperatureHigh,
+    "smart-city-urban-heat-monitoring": faTemperatureHigh,
+    "solid-health-app": faHeartPulse,
   };
 
   const isParentHttps =
     typeof window !== "undefined" && window.location.protocol === "https:";
+
   const targetIsHttp = useMemo(() => {
     try {
-      return new URL(activeLink?.url || "").protocol === "http:";
+      return new URL(activeLink?.url || "", window.location.origin).protocol === "http:";
     } catch {
       return false;
     }
@@ -36,10 +40,13 @@ export default function ExternalHost() {
     return (
       <div className="container">
         <div className="toolbar">
-          <div className="crumb"><span>Not found</span></div>
+          <div className="crumb">
+            <span>Not found</span>
+          </div>
           <div className="primary-actions">
             <button className="pill-btn" onClick={() => navigate(-1)}>
-              <FontAwesomeIcon icon={faArrowLeft} /><span>Back</span>
+              <FontAwesomeIcon icon={faArrowLeft} />
+              <span>Back</span>
             </button>
           </div>
         </div>
@@ -60,6 +67,7 @@ export default function ExternalHost() {
           />
           <span>{activeLink.title}</span>
         </div>
+
         <div className="primary-actions">
           <a
             className="pill-btn"
@@ -67,7 +75,8 @@ export default function ExternalHost() {
             target="_blank"
             rel="noreferrer"
           >
-            <FontAwesomeIcon icon={faUpRightFromSquare} /><span>Open</span>
+            <FontAwesomeIcon icon={faUpRightFromSquare} />
+            <span>Open</span>
           </a>
         </div>
       </div>
@@ -75,7 +84,10 @@ export default function ExternalHost() {
       <div className="external-host-shell">
         {cannotEmbed ? (
           <div className="notice">
-            <p>This site uses HTTP and cannot be embedded inside an HTTPS app. Open it in a new tab, or serve it via HTTPS or an HTTPS reverse proxy.</p>
+            <p>
+              This site uses HTTP and cannot be embedded inside an HTTPS app.
+              Open it in a new tab, or serve it via HTTPS or an HTTPS reverse proxy.
+            </p>
           </div>
         ) : (
           <>

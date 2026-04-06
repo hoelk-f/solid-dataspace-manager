@@ -1,4 +1,3 @@
-// Sidebar.jsx
 import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -15,7 +14,8 @@ import {
   faInbox,
   faBell,
   faChartLine,
-  faFolder
+  faFolder,
+  faHeartPulse,
 } from "@fortawesome/free-solid-svg-icons";
 import session from "../solidSession";
 import {
@@ -30,6 +30,7 @@ import {
 import { LDP, RDF } from "@inrupt/vocab-common-rdf";
 import "./Sidebar.css";
 import { appVersion } from "../versions";
+import { getAppsBySection, getBranding } from "../config/runtimeConfig";
 
 const SDM_NS = "https://w3id.org/solid-dataspace-manager#";
 const SDM = {
@@ -38,6 +39,7 @@ const SDM = {
   status: `${SDM_NS}status`,
   decidedAt: `${SDM_NS}decidedAt`,
 };
+
 const DCT_CREATED = "http://purl.org/dc/terms/created";
 const LAST_SEEN_REQUESTS_KEY = "sdm-last-seen-requests";
 const LAST_SEEN_DECISIONS_KEY = "sdm-last-seen-decisions";
@@ -49,11 +51,22 @@ const noCacheFetch = (input, init = {}) =>
     headers: { ...(init.headers || {}), "Cache-Control": "no-cache" },
   });
 
+const appIconMap = {
+  default: faTableColumns,
+  temperature: faTemperatureHigh,
+  database: faDatabase,
+  health: faHeartPulse,
+  server: faServer,
+};
+
 function Sidebar({ webId }) {
   const { pathname } = useLocation();
   const isActive = (to) => pathname === to;
   const [unreadRequests, setUnreadRequests] = useState(0);
   const [unreadDecisions, setUnreadDecisions] = useState(0);
+
+  const applicationApps = getAppsBySection("applications");
+  const branding = getBranding();
 
   useEffect(() => {
     let cancelled = false;
@@ -96,7 +109,9 @@ function Sidebar({ webId }) {
               const dataset = await getSolidDataset(url, { fetch: noCacheFetch });
               const thing = getThing(dataset, url) || getThingAll(dataset)[0];
               if (!thing) return;
+
               const types = parseTypes(thing);
+
               if (types.includes(SDM.AccessRequest)) {
                 const status = getStringNoLocale(thing, SDM.status) || "";
                 if (status === "pending") requestCount += 1;
@@ -106,6 +121,7 @@ function Sidebar({ webId }) {
                 const decidedAt = getStringNoLocale(thing, SDM.decidedAt) || "";
                 const createdAt = getStringNoLocale(thing, DCT_CREATED) || "";
                 const decisionTime = Date.parse(decidedAt || createdAt) || 0;
+
                 if (!hasSeenDecisions) {
                   decisionCount += 1;
                 } else if (decisionTime > lastSeenDecisions) {
@@ -131,6 +147,7 @@ function Sidebar({ webId }) {
     };
 
     if (!webId) return undefined;
+
     countUnread();
     timer = setInterval(countUnread, 15000);
 
@@ -153,16 +170,18 @@ function Sidebar({ webId }) {
     <aside className="sidebar">
       <div className="sb-brand">
         <div className="sb-logo">
-          <img src="/Logo_TMDT.png" alt="TMDT Logo" />
+          <img src={branding.logoUrl} alt={branding.logoAlt} />
         </div>
       </div>
 
       <nav className="sb-nav">
         <div className="sb-section">General</div>
+
         <Link to="/" className={"sb-link" + (isActive("/") ? " active" : "")}>
           <FontAwesomeIcon icon={faFolder} />
           <span>Solid Data Manager</span>
         </Link>
+
         <Link
           to="/transactions"
           className={"sb-link" + (isActive("/transactions") ? " active" : "")}
@@ -170,6 +189,7 @@ function Sidebar({ webId }) {
           <FontAwesomeIcon icon={faChartLine} />
           <span>Transaction History</span>
         </Link>
+
         <Link
           to="/notifications"
           className={"sb-link" + (isActive("/notifications") ? " active" : "")}
@@ -177,11 +197,14 @@ function Sidebar({ webId }) {
           <span className="sb-icon">
             <FontAwesomeIcon icon={faInbox} />
             {unreadRequests > 0 && (
-              <span className="sb-badge">{unreadRequests > 9 ? "9+" : unreadRequests}</span>
+              <span className="sb-badge">
+                {unreadRequests > 9 ? "9+" : unreadRequests}
+              </span>
             )}
           </span>
           <span>Access Requests</span>
         </Link>
+
         <Link
           to="/decisions"
           className={"sb-link" + (isActive("/decisions") ? " active" : "")}
@@ -189,11 +212,14 @@ function Sidebar({ webId }) {
           <span className="sb-icon">
             <FontAwesomeIcon icon={faBell} />
             {unreadDecisions > 0 && (
-              <span className="sb-badge">{unreadDecisions > 9 ? "9+" : unreadDecisions}</span>
+              <span className="sb-badge">
+                {unreadDecisions > 9 ? "9+" : unreadDecisions}
+              </span>
             )}
           </span>
           <span>Access Decisions</span>
         </Link>
+
         <Link
           to="/profile"
           className={"sb-link" + (isActive("/profile") ? " active" : "")}
@@ -201,12 +227,14 @@ function Sidebar({ webId }) {
           <FontAwesomeIcon icon={faUser} />
           <span>Profile Manager</span>
         </Link>
+
         <Link to="/info" className={"sb-link" + (isActive("/info") ? " active" : "")}>
           <FontAwesomeIcon icon={faInfo} />
           <span>Information</span>
         </Link>
 
         <div className="sb-section">Consume and Provide</div>
+
         <Link
           to="/catalog"
           className={"sb-link" + (isActive("/catalog") ? " active" : "")}
@@ -214,20 +242,41 @@ function Sidebar({ webId }) {
           <FontAwesomeIcon icon={faBookOpen} />
           <span>Semantic Data Catalog</span>
         </Link>
+
         <Link to="/web/plasma" className="sb-link">
           <FontAwesomeIcon icon={faHexagonNodes} />
           <span>PLASMA</span>
         </Link>
+
         <Link to="/web/node-red" className="sb-link">
           <FontAwesomeIcon icon={faDatabase} />
           <span>Node-RED</span>
         </Link>
 
-        <div className="sb-section">Applications</div>
-        <Link to="/web/urban-heat-monitoring" className="sb-link">
-          <FontAwesomeIcon icon={faTemperatureHigh} />
-          <span>Urban Heat Monitoring</span>
-        </Link>
+        {applicationApps.length > 0 && (
+          <>
+            <div className="sb-section">Applications</div>
+            {applicationApps.map((app) => {
+              const icon = appIconMap[app.iconKey] || appIconMap.default;
+
+              if (app.linkType === "internal") {
+                return (
+                  <Link key={app.id} to={app.href} className="sb-link">
+                    <FontAwesomeIcon icon={icon} />
+                    <span>{app.title}</span>
+                  </Link>
+                );
+              }
+
+              return (
+                <a key={app.id} href={app.href} className="sb-link">
+                  <FontAwesomeIcon icon={icon} />
+                  <span>{app.title}</span>
+                </a>
+              );
+            })}
+          </>
+        )}
 
         <div className="sb-section">Miscellaneous</div>
         <a
