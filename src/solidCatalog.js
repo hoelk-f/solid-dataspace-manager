@@ -32,6 +32,8 @@ const DATASET_CONTAINER = "catalog/ds/";
 const SERIES_CONTAINER = "catalog/series/";
 const RECORDS_CONTAINER = "catalog/records/";
 const CATALOG_DOC = "catalog/cat.ttl";
+const SDP_NS = "https://w3id.org/solid-dcat-profile#";
+export const SDP_CATALOG = `${SDP_NS}catalog`;
 const SDM_NS = "https://w3id.org/solid-dataspace-manager#";
 const SDM_REGISTRY_MODE = `${SDM_NS}registryMode`;
 const SDM_REGISTRY = `${SDM_NS}registry`;
@@ -152,8 +154,9 @@ const setCatalogLinkInProfile = async (webId, catalogUrl, fetch) => {
   if (!profileThing) {
     profileThing = createThing({ url: webId });
   }
+  profileThing = removeAll(profileThing, SDP_CATALOG);
   profileThing = removeAll(profileThing, DCAT.catalog);
-  profileThing = setUrl(profileThing, DCAT.catalog, catalogUrl);
+  profileThing = setUrl(profileThing, SDP_CATALOG, catalogUrl);
   const updatedProfile = setThing(profileDataset, profileThing);
   await saveSolidDatasetAt(profileDocUrl, updatedProfile, { fetch });
 };
@@ -463,7 +466,9 @@ export const resolveCatalogUrl = async (webId, fetch) => {
     const profileDocUrl = webId.split("#")[0];
     const profileDoc = await getSolidDataset(profileDocUrl, { fetch });
     const profileThing = getThing(profileDoc, webId);
-    const profileCatalog = profileThing ? getUrl(profileThing, DCAT.catalog) : null;
+    const profileCatalog = profileThing
+      ? getUrl(profileThing, SDP_CATALOG) || getUrl(profileThing, DCAT.catalog)
+      : null;
     if (profileCatalog) return profileCatalog;
   } catch (err) {
     console.warn("Failed to resolve catalog URL from profile:", err);

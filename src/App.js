@@ -28,6 +28,7 @@ import {
   buildDefaultPrivateRegistry,
   loadRegistryConfig,
   resolveCatalogUrl,
+  SDP_CATALOG,
 } from "./solidCatalog";
 import { dataManagerVersion } from "./versions";
 
@@ -211,9 +212,18 @@ const App = () => {
           if (catalogUrl) {
             await getSolidDataset(catalogUrl.split("#")[0], { fetch: session.fetch });
             missingCatalog = false;
+          } catch {
+            missingCatalog = true;
           }
-        } catch {
-          missingCatalog = true;
+        } else {
+          try {
+            const catalogUrl = await resolveCatalogUrl(webId, session.fetch);
+            if (catalogUrl) {
+              await getSolidDataset(catalogUrl.split("#")[0], { fetch: session.fetch });
+            }
+          } catch {
+            // Keep onboarding required until the new profile predicate is present.
+          }
         }
 
         let missingRegistry = false;

@@ -27,3 +27,11 @@ Builds the app for production to the `build` folder.
 
 Ejects the build configuration. This is a one-way operation.
 
+## License
+
+This project is licensed under the Apache License 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+
+
+## Citation
+
+If you use this repository, please cite it using the metadata in [CITATION.cff](CITATION.cff).

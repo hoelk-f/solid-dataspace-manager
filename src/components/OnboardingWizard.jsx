@@ -32,9 +32,11 @@ import {
   ensureCatalogStructure,
   ensurePrivateRegistryContainer,
   loadRegistryConfig,
+  loadRegistryMembersFromContainer,
   REGISTRY_PRESETS,
   resolveCatalogUrl,
   saveRegistryConfig,
+  SDP_CATALOG,
 } from "../solidCatalog";
 import "./OnboardingWizard.css";
 
@@ -79,6 +81,16 @@ const normalizeEmails = (values) =>
     .map((value) => value.trim())
     .filter((value) => value.length > 0);
 
+const containerExists = async (url) => {
+  if (!url) return false;
+  try {
+    await getSolidDataset(url, { fetch: session.fetch });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 export default function OnboardingWizard({ webId, onComplete, onCancel }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -104,7 +116,7 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
   const [registrySelections, setRegistrySelections] = useState([]);
   const [researchRegistryAcknowledged, setResearchRegistryAcknowledged] = useState(false);
   const [privateRegistryUrl, setPrivateRegistryUrl] = useState("");
-  const [privateRegistryAcknowledged, setPrivateRegistryAcknowledged] = useState(true);
+  const [privateRegistryAcknowledged, setPrivateRegistryAcknowledged] = useState(false);
 
   const steps = useMemo(
     () => [
@@ -171,24 +183,34 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
       setEmails(allEmails.length ? allEmails : [""]);
 
       const inbox = getUrl(me, LDP.inbox) || "";
+      const targetInboxUrl = `${getPodRoot(webId)}inbox/`;
+      const hasInboxContainer = await containerExists(targetInboxUrl);
       setInboxUrl(inbox);
-      setInboxAcknowledged(Boolean(inbox));
+      setInboxAcknowledged(hasInboxContainer);
       const photo = getUrl(me, VCARD.hasPhoto) || getUrl(me, FOAF.img) || "";
       setPhotoIri(photo);
 
-      let catalogResolved = "";
+      const profileCatalog = getUrl(me, SDP_CATALOG) || "";
+      let catalogResolved = profileCatalog;
       let hasCatalog = false;
-      try {
-        catalogResolved = await resolveCatalogUrl(webId, session.fetch);
-        if (catalogResolved) {
-          await getSolidDataset(catalogResolved.split("#")[0], { fetch: session.fetch });
+      const catalogContainerUrl = `${getPodRoot(webId)}catalog/`;
+      const hasCatalogContainer = await containerExists(catalogContainerUrl);
+      if (profileCatalog) {
+        try {
+          await getSolidDataset(profileCatalog.split("#")[0], { fetch: session.fetch });
           hasCatalog = true;
+        } catch {
+          hasCatalog = false;
         }
-      } catch {
-        hasCatalog = false;
+      } else {
+        try {
+          catalogResolved = await resolveCatalogUrl(webId, session.fetch);
+        } catch {
+          catalogResolved = "";
+        }
       }
       setCatalogUrl(catalogResolved);
-      setCatalogAcknowledged(hasCatalog);
+      setCatalogAcknowledged(hasCatalogContainer);
 
       const registryConfig = await loadRegistryConfig(webId, session.fetch);
       const hasResearchSelection = (registryConfig.registries || []).length > 0;
@@ -198,11 +220,22 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
           : "private";
       setRegistryMode(nextMode || "private");
       setRegistrySelections(registryConfig.registries || []);
-      setPrivateRegistryUrl(
-        registryConfig.privateRegistry || buildDefaultPrivateRegistry(webId)
-      );
-      setPrivateRegistryAcknowledged(true);
-      setResearchRegistryAcknowledged(Boolean((registryConfig.registries || []).length));
+      const resolvedPrivateRegistry =
+        registryConfig.privateRegistry || buildDefaultPrivateRegistry(webId);
+      setPrivateRegistryUrl(resolvedPrivateRegistry);
+      const hasPrivateRegistryContainer = await containerExists(resolvedPrivateRegistry);
+      let hasResearchRegistryMembership = false;
+      if ((registryConfig.registries || []).length) {
+        const membershipChecks = await Promise.all(
+          (registryConfig.registries || []).map(async (registryUrl) => {
+            const members = await loadRegistryMembersFromContainer(registryUrl, session.fetch);
+            return members.includes(webId);
+          })
+        );
+        hasResearchRegistryMembership = membershipChecks.some(Boolean);
+      }
+      setResearchRegistryAcknowledged(hasResearchRegistryMembership);
+      setPrivateRegistryAcknowledged(hasPrivateRegistryContainer);
 
       const missingBasics = !(nm && org && role);
       const missingEmail = allEmails.length === 0;
@@ -599,8 +632,7 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
                 {inboxUrl || "Not configured"}
               </div>
               <div className="onboarding-inbox__hint">
-                On finish, we will create an inbox container in your pod root (if needed)
-                and set the permissions required for notifications.
+                The inbox will be created in a <code>inbox/</code> container in your pod.
               </div>
               <label className="onboarding-checkbox">
                 <input
@@ -705,8 +737,16 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
                 {privateRegistryUrl || defaultPrivateRegistry || "Not configured"}
               </div>
               <div className="onboarding-inbox__hint">
-                We will always create a registry container in your pod root under <code>registry/</code>.
+                The registry will always be created in your pod root under <code>registry/</code>.
               </div>
+              <label className="onboarding-checkbox">
+                <input
+                  type="checkbox"
+                  checked={privateRegistryAcknowledged}
+                  onChange={(e) => setPrivateRegistryAcknowledged(e.target.checked)}
+                />
+                <span>I understand that finishing will create and configure my registry.</span>
+              </label>
             </div>
           </div>
         )}
@@ -731,6 +771,7 @@ export default function OnboardingWizard({ webId, onComplete, onCancel }) {
               (step === 3 &&
                 (!inboxAcknowledged ||
                   !catalogAcknowledged ||
+                  !privateRegistryAcknowledged ||
                   (registryMode === "research" &&
                     (!researchRegistryAcknowledged || !registrySelectionsComplete))))
             }
