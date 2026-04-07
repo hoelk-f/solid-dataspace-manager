@@ -206,11 +206,11 @@ const App = () => {
         const missingEmail = allEmails.length === 0;
         const missingInbox = !inbox;
 
-        let missingCatalog = true;
-        try {
-          const catalogUrl = await resolveCatalogUrl(webId, session.fetch);
-          if (catalogUrl) {
-            await getSolidDataset(catalogUrl.split("#")[0], { fetch: session.fetch });
+        const profileCatalog = getUrl(me, SDP_CATALOG) || "";
+        let missingCatalog = !profileCatalog;
+        if (profileCatalog) {
+          try {
+            await getSolidDataset(profileCatalog.split("#")[0], { fetch: session.fetch });
             missingCatalog = false;
           } catch {
             missingCatalog = true;

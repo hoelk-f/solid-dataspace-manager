@@ -16,7 +16,7 @@ window.__APP_CONFIG__ = {
       "href": "/web/solid-health-app",
       "section": "applications",
       "iconKey": "health",
-      "visible": true,
+      "visible": false,
       "order": 20,
       "linkType": "internal"
     }
